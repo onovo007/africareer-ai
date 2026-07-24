@@ -1,0 +1,16 @@
+# Pinned for reproducible container builds. Bump deliberately, then re-test.
+streamlit==1.39.0
+python-dotenv==1.0.1
+openai==1.54.4
+langchain==0.3.7
+langchain-openai==0.2.8
+langchain-core==0.3.19
+pinecone==5.4.2
+PyPDF2==3.0.1
+python-docx==1.1.2
+pandas==2.2.3          # used by the admin analytics dashboard
+pyreadline3==3.5.4     # Windows-only local convenience; harmless in Linux container
+
+# --- Optional: durable analytics via Supabase ---
+# Uncomment to enable, then set SUPABASE_URL + SUPABASE_KEY as secrets.
+# supabase==2.9.1

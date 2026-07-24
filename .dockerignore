@@ -1,0 +1,12 @@
+# NEVER ship secrets or local artifacts into the image
+.env
+*.env
+africareer_analytics.json
+*.zipx
+*.zip
+__pycache__/
+*.pyc
+.git/
+.gitignore
+README.md
+africareer_RAG_GUARDRAILS_app.py

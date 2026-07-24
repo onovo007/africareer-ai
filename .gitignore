@@ -1,0 +1,19 @@
+# === SECRETS — never commit these ===
+.env
+*.env
+!.env.example
+
+# Local usage data (contains real user analytics)
+africareer_analytics.json
+
+# Duplicate/older app variant — app.py is the canonical entrypoint the Dockerfile runs
+africareer_RAG_GUARDRAILS_app.py
+
+# Archives / build junk
+*.zipx
+*.zip
+__pycache__/
+*.pyc
+.streamlit/secrets.toml
+.venv/
+venv/
