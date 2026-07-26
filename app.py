@@ -1694,6 +1694,37 @@ def web_research(query: str, max_results: int = 5) -> str:
     except Exception:
         return ""
 
+# Reputable job boards (global + African + development sector) for focused job search
+_JOB_BOARDS = (
+    "linkedin.com", "indeed.com", "glassdoor.com", "ziprecruiter.com",
+    "jobberman.com", "myjobmag.com", "brightermonday.co.ke", "careers24.com",
+    "reliefweb.int", "unjobs.org", "impactpool.org", "devex.com",
+)
+
+@st.cache_data(ttl=900, show_spinner=False)
+def web_job_search(query: str, time_range: str = "", domains=None, max_results: int = 10):
+    """Real, recent job postings from Tavily if configured, else []."""
+    if not TAVILY_API_KEY:
+        return []
+    payload = {"api_key": TAVILY_API_KEY, "query": query,
+               "max_results": max_results, "search_depth": "basic"}
+    if time_range:
+        payload["time_range"] = time_range           # 'day' | 'week' | 'month'
+    if domains:
+        payload["include_domains"] = list(domains)
+    try:
+        with httpx.Client(timeout=15.0) as client:
+            resp = client.post("https://api.tavily.com/search", json=payload)
+        out = []
+        for r in resp.json().get("results", []):
+            u = r.get("url", "")
+            if u:
+                out.append({"title": r.get("title", u), "url": u,
+                            "content": (r.get("content") or "")[:200]})
+        return out
+    except Exception:
+        return []
+
 # ----- SECTION 3: LEARNING RESOURCES -----
 def learning_resources_section():
     log_analytics('section_accessed', 'Learning Resources')
@@ -2101,6 +2132,82 @@ RULES:
             key="ml_dl",
         )
 
+# ----- SECTION 6: JOB SEARCH (professionals) -----
+_JOB_DISCIPLINES = [
+    "Any discipline", "Health & Medicine", "Data & Analytics", "Engineering & Technology",
+    "Education & Research", "Finance & Business", "Agriculture & Environment",
+    "NGO / Development", "Government / Public Sector", "Creative & Media",
+    "Sales & Marketing", "Operations & Admin", "Law & Policy",
+]
+
+
+def jobs_search_section():
+    log_analytics('section_accessed', 'Job Search')
+
+    st.markdown("## Job Search")
+    st.markdown("Find current job openings across disciplines, countries and dates. "
+                "Results come from a live web search and every link is verified.")
+
+    role = st.text_input("Role / keywords", key="job_role",
+                         placeholder="e.g., data scientist, nurse, project manager, monitoring & evaluation")
+
+    jc1, jc2, jc3 = st.columns(3)
+    with jc1:
+        discipline = st.selectbox("Discipline", _JOB_DISCIPLINES, key="job_disc")
+    with jc2:
+        location = st.text_input("Country or city", key="job_loc", placeholder="e.g., Nigeria, Nairobi, Remote")
+    with jc3:
+        period = st.selectbox("Posted", ["Any time", "Past 24 hours", "Past week", "Past month"], key="job_period")
+
+    jc4, jc5, jc6 = st.columns(3)
+    with jc4:
+        experience = st.selectbox("Experience", ["Any", "Entry level", "Mid level", "Senior", "Executive"], key="job_exp")
+    with jc5:
+        work_mode = st.selectbox("Work mode", ["Any", "Remote", "On-site", "Hybrid"], key="job_mode")
+    with jc6:
+        boards_only = st.checkbox("Focus on major job boards", value=True, key="job_boards")
+
+    if st.button("Search Jobs", key="job_search_btn"):
+        if not TAVILY_API_KEY:
+            st.info("Live job search needs the TAVILY_API_KEY secret to be set.")
+            return
+        if not role.strip():
+            st.warning("Please enter a role or keywords.")
+            return
+
+        log_analytics('job_search', f"{role} | {location}")
+        with st.spinner("Searching the web for current jobs..."):
+            yr = datetime.now().year
+            parts = [role.strip()]
+            if discipline and not discipline.startswith("Any"):
+                parts.append(discipline)
+            if experience and experience != "Any":
+                parts.append(experience)
+            if work_mode and work_mode != "Any":
+                parts.append(work_mode)
+            parts.append("jobs")
+            if location.strip():
+                parts.append("in " + location.strip())
+            parts.append(f"{yr} apply")
+            query = " ".join(parts)
+            time_range = {"Past 24 hours": "day", "Past week": "week", "Past month": "month"}.get(period, "")
+            domains = _JOB_BOARDS if boards_only else None
+            results = web_job_search(query, time_range=time_range, domains=domains, max_results=10)
+            verified = [r for r in results if verify_url(r["url"])]
+
+        if verified:
+            st.markdown(f"### {len(verified)} current openings")
+            for r in verified:
+                st.markdown(f"**[{r['title']}]({r['url']})**")
+                if r.get("content"):
+                    st.caption(r["content"])
+                st.markdown("")
+            st.info("Found a role? Use the Resume Analysis tab to tailor your CV and generate a "
+                    "researched cover letter for it.")
+        else:
+            st.info("No verified openings this time. Try broader keywords, a different location, "
+                    "or a wider date range.")
+
 # ----- LANDING PAGE / LOGIN -----
 def render_landing():
     """Show the landing page + sign-in. Returns True once the user has entered."""
@@ -2183,6 +2290,7 @@ def main():
         "AI Assistant",
         "Resume Analysis",
         "Motivation Letters",
+        "Job Search",
     ])
 
     with tabs[0]:
@@ -2234,6 +2342,9 @@ def main():
 
     with tabs[5]:
         motivation_letters_section()
+
+    with tabs[6]:
+        jobs_search_section()
 
 if __name__ == "__main__":
     main()
