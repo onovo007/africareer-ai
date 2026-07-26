@@ -1544,6 +1544,34 @@ def provider_search_url(provider: str, query: str) -> str:
             return tmpl.format(q=q)
     return f"https://www.classcentral.com/search?q={q}"
 
+# Provider-grounded cost classification (don't trust the model's self-reported cost)
+_PAID_PROVIDERS = ("udemy", "udacity", "linkedin learning")
+_FREE_PROVIDERS = ("freecodecamp", "khan academy", "khanacademy", "youtube",
+                   "mit opencourseware", "ocw", "alison")
+
+def classify_cost(provider: str, llm_cost: str) -> str:
+    """Return 'Free' or 'Paid', grounded by provider first, then the model's label.
+    Free = the content can be accessed at no cost (Coursera/edX audit free; certificate may cost)."""
+    p = (provider or "").lower()
+    if any(k in p for k in _PAID_PROVIDERS):
+        return "Paid"
+    if any(k in p for k in _FREE_PROVIDERS):
+        return "Free"
+    lc = (llm_cost or "").lower()
+    if "paid" in lc and "free" not in lc:
+        return "Paid"
+    return "Free"  # Coursera/edX audit-free; Class Central lists free options
+
+def cost_matches(cost: str, pref: str) -> bool:
+    """Enforce the user's cost preference in code (the model is unreliable at this)."""
+    if pref.startswith("Free &"):   # both
+        return True
+    if pref.startswith("Free"):
+        return cost == "Free"
+    if pref.startswith("Paid"):
+        return cost == "Paid"
+    return True
+
 @st.cache_data(ttl=3600, show_spinner=False)
 def verify_url(url: str, timeout: float = 6.0) -> bool:
     """Return True if the URL resolves for a real user.
@@ -1637,16 +1665,29 @@ def learning_resources_section():
             rag_context_learning = retrieve_career_guidance(
                 f"skills development training courses {learning_interest} African youth"
             )
-            course_prompt = f"""Recommend 5 high-quality, real learning resources for an African youth who wants to learn: {learning_interest}
+            # Preference-specific guidance so the model biases the right providers
+            if course_type.startswith("Free"):
+                cost_guidance = ("Recommend ONLY courses whose content is accessible at NO cost. Strongly prefer "
+                                 "freeCodeCamp, Khan Academy, YouTube, Alison, MIT OpenCourseWare, Class Central, "
+                                 "and free-to-audit Coursera/edX courses. Do NOT include Udemy, Udacity, or LinkedIn Learning.")
+            elif course_type.startswith("Paid"):
+                cost_guidance = ("Recommend paid courses and certifications. Prefer Udemy, Udacity, LinkedIn Learning, "
+                                 "and paid Coursera/edX certificates or specializations.")
+            else:
+                cost_guidance = "Include a healthy mix of free and paid options."
+
+            course_prompt = f"""Recommend 8 high-quality, real learning resources for an African youth who wants to learn: {learning_interest}
 Level: {skill_level}
-Cost preference: {course_type}
+
+COST REQUIREMENT: {cost_guidance}
+Definition of "Free" = the learning content can be accessed at no cost (free-to-audit counts as Free even if an optional certificate costs extra).
 
 Return ONLY valid JSON (no markdown, no code fences) - an array of objects with this exact shape:
 [
   {{
     "title": "specific, real course or specialization title",
-    "provider": "one of: Coursera, edX, Udemy, Udacity, Class Central, freeCodeCamp, Khan Academy, LinkedIn Learning, YouTube, Alison, FutureLearn",
-    "cost": "Free | Paid | Free & Paid",
+    "provider": "one of: Coursera, edX, Udemy, Udacity, Class Central, freeCodeCamp, Khan Academy, LinkedIn Learning, YouTube, Alison, FutureLearn, MIT OpenCourseWare",
+    "cost": "Free | Paid",
     "level": "Beginner | Intermediate | Advanced",
     "duration": "approx. time commitment, e.g. '3 months'",
     "why": "one sentence on why it fits this learner and the African job market"
@@ -1655,7 +1696,8 @@ Return ONLY valid JSON (no markdown, no code fences) - an array of objects with 
 
 RULES:
 - Do NOT include any URLs or links - the app builds and verifies links itself.
-- Prefer well-known, currently-offered courses. Respect the cost preference.
+- "cost" must be exactly "Free" or "Paid" per the definition above.
+- Prefer well-known, currently-offered courses.
 - Return ONLY the JSON array, nothing else."""
 
             raw = safe_llm_call(course_prompt, rag_context_learning, "English")
@@ -1676,57 +1718,73 @@ RULES:
                     except Exception:
                         recs = []
 
-            if not isinstance(recs, list) or not recs:
-                st.info("Couldn't structure the results this time. Please try a more specific topic.")
-                return
+            # Ground the cost label by provider, then ENFORCE the user's preference in code
+            items = []
+            if isinstance(recs, list):
+                for rec in recs:
+                    if not isinstance(rec, dict):
+                        continue
+                    title = str(rec.get("title", "")).strip()
+                    if not title:
+                        continue
+                    provider = str(rec.get("provider", "")).strip()
+                    cost = classify_cost(provider, str(rec.get("cost", "")))
+                    if not cost_matches(cost, course_type):
+                        continue
+                    items.append({
+                        "title": title, "provider": provider, "cost": cost,
+                        "level": str(rec.get("level", "")).strip(),
+                        "duration": str(rec.get("duration", "")).strip(),
+                        "why": str(rec.get("why", "")).strip(),
+                    })
+            items = items[:6]
 
-            st.markdown("### Recommended Courses")
-            st.caption("Links are verified live. If a provider blocks automated checks, the link falls back to Class Central.")
-
-            for rec in recs:
-                if not isinstance(rec, dict):
-                    continue
-                title = str(rec.get("title", "")).strip()
-                if not title:
-                    continue
-                provider = str(rec.get("provider", "")).strip()
-                cost = str(rec.get("cost", "")).strip()
-                level = str(rec.get("level", "")).strip()
-                duration = str(rec.get("duration", "")).strip()
-                why = str(rec.get("why", "")).strip()
-
-                url = provider_search_url(provider, title)
-                ok = verify_url(url)
-                label_provider = provider or "Class Central"
-                if not ok:
-                    url = provider_search_url("class central", title)
+            if items:
+                st.markdown(f"### Recommended Courses ({course_type})")
+                st.caption('Cost is checked against the provider; "Free" means the content is accessible at no cost '
+                           '(Coursera/edX can be audited free — a certificate may cost extra). Links are verified live.')
+                for it in items:
+                    url = provider_search_url(it["provider"], it["title"])
                     ok = verify_url(url)
-                    label_provider = "Class Central"
+                    label_provider = it["provider"] or "Class Central"
+                    if not ok:
+                        url = provider_search_url("class central", it["title"])
+                        ok = verify_url(url)
+                        label_provider = "Class Central"
+                    meta = " · ".join([x for x in [it["provider"], it["cost"], it["level"], it["duration"]] if x])
+                    st.markdown(f"**{it['title']}**")
+                    if meta:
+                        st.caption(meta)
+                    if it["why"]:
+                        st.markdown(it["why"])
+                    if ok:
+                        st.markdown(f"[Find this course on {label_provider} →]({url})")
+                    else:
+                        st.caption("Live link check failed — search this title on classcentral.com.")
+                    st.markdown("")
+            else:
+                st.info(f"No strictly {course_type.lower()} matches came back for that topic. "
+                        "Try 'Free & Paid', or a broader topic.")
 
-                meta = " · ".join([x for x in [provider, cost, level, duration] if x])
-                st.markdown(f"**{title}**")
-                if meta:
-                    st.caption(meta)
-                if why:
-                    st.markdown(why)
-                if ok:
-                    st.markdown(f"[Find this course on {label_provider} →]({url})")
-                else:
-                    st.caption("Live link check failed — search this title on classcentral.com.")
-                st.markdown("")
-
+            # Live web search, tuned to the chosen cost (requires TAVILY_API_KEY)
             if TAVILY_API_KEY:
-                live = web_search_links(f"{learning_interest} {skill_level} online course")
-                verified_live = [l for l in live if verify_url(l["url"])]
+                if course_type.startswith("Free"):
+                    q = f"free {learning_interest} online course {skill_level}"
+                    heading = "Verified Free Courses (live web search)"
+                elif course_type.startswith("Paid"):
+                    q = f"{learning_interest} paid certification course {skill_level}"
+                    heading = "Verified Paid Courses (live web search)"
+                else:
+                    q = f"{learning_interest} online course {skill_level}"
+                    heading = "Verified Courses (live web search)"
+                verified_live = [l for l in web_search_links(q) if verify_url(l["url"])]
                 if verified_live:
-                    st.markdown("### Verified Direct Links (live web search)")
+                    st.markdown(f"### {heading}")
                     for l in verified_live:
                         st.markdown(f"- [{l['title']}]({l['url']})")
-
-            st.info(
-                "For free options, [Class Central](https://www.classcentral.com) aggregates 50,000+ "
-                "free courses from top universities — filter by topic, language, and cost."
-            )
+            else:
+                st.info("Tip: add a TAVILY_API_KEY secret to also pull real, verified course links "
+                        "from a live web search tuned to your Free/Paid choice.")
 
 # ----- SECTION 4: AI ASSISTANT -----
 def ai_assistant_section():
