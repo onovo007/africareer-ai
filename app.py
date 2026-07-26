@@ -15,6 +15,8 @@ import json
 import hashlib
 from collections import Counter
 import pandas as pd
+import httpx
+from urllib.parse import quote_plus
 
 # ----- BRANDING -----
 COMPANY_NAME = "Quantium Insights LLC"
@@ -276,7 +278,7 @@ try:
     OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
     
     if not PINECONE_API_KEY or not OPENAI_API_KEY:
-        st.error("⚠️ The service is not fully configured yet. Please contact the AfriCareer AI team.")
+        st.error("The service is not fully configured yet. Please contact the AfriCareer AI team.")
         st.stop()
     
     pc = Pinecone(api_key=PINECONE_API_KEY)
@@ -900,12 +902,12 @@ Source: AfDB, ILO, UNICEF frameworks""",
 
 # ----- SIDEBAR -----
 with st.sidebar:
-    st.markdown(f"## 🌍 {APP_NAME}")
+    st.markdown(f"## {APP_NAME}")
     st.markdown(f"*{TAGLINE}*")
     
     # Admin Access
     st.markdown("---")
-    admin_access = st.checkbox("🔐 Admin Access")
+    admin_access = st.checkbox("Admin Access")
     
     if admin_access:
         st.markdown("### Admin Login")
@@ -915,15 +917,15 @@ with st.sidebar:
         if st.button("Login"):
             if username == ADMIN_USERNAME and hashlib.sha256(password.encode()).hexdigest() == ADMIN_PASSWORD_HASH:
                 st.session_state['admin_logged_in'] = True
-                st.success("✅ Admin access granted!")
+                st.success("Admin access granted.")
                 st.rerun()
             else:
-                st.error("❌ Invalid credentials")
+                st.error("Invalid credentials.")
     
     st.markdown("---")
-    st.caption("🌐 Choose your language at the top of the main page ☝️")
+    st.caption("Choose your language at the top of the main page.")
     st.markdown("---")
-    st.markdown("## ✨ Features")
+    st.markdown("## Features")
     st.markdown("""
     - 🎯 Youth-Centric Design
     - 📄 ATS-Optimized CV Builder
@@ -933,14 +935,13 @@ with st.sidebar:
     """)
     
     st.markdown("---")
-    st.markdown("## 📚 Knowledge Base")
-    
-    if st.button("🔄 Initialize/Update Knowledge Base"):
+    st.markdown("## Knowledge Base")
+
+    if st.button("Initialize / Update Knowledge Base"):
         with st.spinner("Loading foundational knowledge..."):
             count = initial_populate_rag()
             if count > 0:
-                st.success(f"✅ Loaded {count} foundational documents")
-                st.balloons()
+                st.success(f"Loaded {count} foundational documents.")
             else:
                 st.info("ℹ️ Knowledge base already initialized")
     
@@ -949,18 +950,18 @@ with st.sidebar:
 
 # ----- ADMIN DASHBOARD -----
 def admin_dashboard():
-    st.title("🔐 Admin Dashboard")
+    st.title("Admin Dashboard")
     
     col1, col2 = st.columns([3, 1])
     with col2:
-        if st.button("🚪 Logout"):
+        if st.button("Logout"):
             st.session_state['admin_logged_in'] = False
             st.rerun()
     
-    tabs = st.tabs(["📊 Analytics", "📚 Knowledge Base Management"])
+    tabs = st.tabs(["Analytics", "Knowledge Base Management"])
     
     with tabs[0]:
-        st.markdown("## 📊 Usage Analytics")
+        st.markdown("## Usage Analytics")
         
         analytics = load_analytics()
         if analytics:
@@ -978,22 +979,22 @@ def admin_dashboard():
             st.info("No analytics data yet")
     
     with tabs[1]:
-        st.markdown("## 📚 Knowledge Base Management")
+        st.markdown("## Knowledge Base Management")
         
         # Display current stats
         try:
             stats = index.describe_index_stats()
             total_vectors = stats.get('total_vector_count', 0)
-            st.info(f"📊 Current Knowledge Base: {total_vectors} total chunks from all documents")
+            st.info(f"Current knowledge base: {total_vectors} total chunks from all documents")
             
             # Estimate number of documents (assuming ~100-200 chunks per doc)
             est_docs = max(1, total_vectors // 150)
-            st.info(f"💡 Estimated ~{est_docs} documents loaded")
+            st.info(f"Estimated ~{est_docs} documents loaded")
         except:
             st.warning("Unable to fetch knowledge base statistics")
         
         st.markdown("---")
-        st.markdown("### ➕ Upload New Document")
+        st.markdown("### Upload New Document")
         st.info("ℹ️ Each upload ADDS to your existing knowledge base (does not replace)")
         
         uploaded_doc = st.file_uploader(
@@ -1063,10 +1064,9 @@ def admin_dashboard():
                             new_stats = index.describe_index_stats()
                             new_total = new_stats.get('total_vector_count', 0)
                             
-                            st.success(f"✅ Document added! {len(chunks)} chunks indexed.")
-                            st.success(f"📊 New total: {new_total} chunks in knowledge base (+{len(chunks)} from this upload)")
-                            st.info(f"📝 Document ID: {doc_id}")
-                            st.balloons()
+                            st.success(f"Document added — {len(chunks)} chunks indexed.")
+                            st.success(f"New total: {new_total} chunks in knowledge base (+{len(chunks)} from this upload).")
+                            st.info(f"Document ID: {doc_id}")
                         else:
                             st.error("No valid content to index")
                     
@@ -1079,32 +1079,32 @@ def admin_dashboard():
 def resume_analysis_section():
     log_analytics('section_accessed', 'Resume Analysis')
     
-    st.markdown("## 📄 Professional Resume Analysis")
+    st.markdown("## Professional Resume Analysis")
     st.markdown("Upload your resume to receive expert feedback grounded in African job market context.")
-    
+
     uploaded_file = st.file_uploader(
-        "📎 Upload Your Resume",
+        "Upload your resume",
         type=['pdf', 'docx', 'txt'],
         help="Limit 25MB per file • PDF, DOCX, TXT"
     )
-    
+
     city = st.text_input(
-        "🏙️ Your City (Optional)",
+        "Your city (optional)",
         placeholder="e.g., Lagos, Nairobi, Accra",
         help="Helps provide location-specific advice"
     )
-    
+
     additional_info = st.text_area(
-        "📝 Additional Information",
+        "Additional information",
         placeholder="Target industry, preferred roles...",
         help="Any additional context that helps us provide better feedback"
     )
-    
-    if st.button("🔍 Analyze Resume", key="analyze_btn"):
+
+    if st.button("Analyze Resume", key="analyze_btn"):
         if uploaded_file:
             log_analytics('resume_upload', f"File: {uploaded_file.name}")
-            
-            with st.spinner("🤔 Analyzing your resume..."):
+
+            with st.spinner("Analyzing your resume..."):
                 try:
                     # Extract text from resume
                     if uploaded_file.name.endswith('.txt'):
@@ -1147,8 +1147,8 @@ Provide:
                     st.session_state['resume_additional'] = additional_info
                     st.session_state['analysis_done'] = True
                     
-                    st.success("✅ Analysis Complete!")
-                    st.markdown("### 📊 Your Resume Analysis")
+                    st.success("Analysis complete.")
+                    st.markdown("### Your Resume Analysis")
                     st.markdown(feedback)
                     
                     log_analytics('analysis_completed')
@@ -1156,25 +1156,25 @@ Provide:
                 except Exception as e:
                     st.error(f"Error: {str(e)}")
         else:
-            st.warning("⚠️ Please upload a resume first")
-    
+            st.warning("Please upload a resume first.")
+
     # ===== POST-ANALYSIS: PREMIUM CV & COVER LETTER GENERATION =====
     if st.session_state.get('analysis_done', False):
         st.markdown("---")
-        st.markdown("### ✨ Generate Premium Documents")
+        st.markdown("### Generate Premium Documents")
         st.markdown("Based on your resume analysis, generate a polished, ATS-optimized CV and/or a professional cover letter.")
         
         # Target job details for cover letter
         col_job1, col_job2 = st.columns(2)
         with col_job1:
             target_position = st.text_input(
-                "🎯 Target Position (for Cover Letter)",
+                "Target position (for cover letter)",
                 placeholder="e.g., Data Analyst, Project Manager, Nurse",
                 key="target_position_input"
             )
         with col_job2:
             target_company = st.text_input(
-                "🏢 Target Company / Organization",
+                "Target company / organization",
                 placeholder="e.g., WHO, Dangote Group, Safaricom",
                 key="target_company_input"
             )
@@ -1183,13 +1183,13 @@ Provide:
         
         # ===== GENERATE UPDATED CV =====
         with col_cv:
-            if st.button("📄 Generate Updated CV", key="gen_cv_btn"):
+            if st.button("Generate Updated CV", key="gen_cv_btn"):
                 resume_text = st.session_state.get('resume_text', '').strip()
                 feedback = st.session_state.get('resume_feedback', '').strip()
                 
                 if resume_text:
                     log_analytics('premium_cv_generation')
-                    with st.spinner("📝 Generating your premium ATS-optimized CV..."):
+                    with st.spinner("Generating your premium ATS-optimized CV..."):
                         try:
                             rag_context_cv = retrieve_career_guidance("professional CV resume best practices African job market ATS optimization")
                             
@@ -1249,15 +1249,15 @@ RULES:
                                 cv_docx = generate_premium_cv_docx(cv_json)
                                 st.session_state['cv_docx'] = cv_docx
                                 st.session_state['cv_generated'] = True
-                                st.success("✅ Premium CV Generated!")
+                                st.success("Premium CV generated.")
                         
                         except Exception as e:
-                            st.error(f"CV Generation Error: {str(e)}")
-                            st.info("💡 Tip: Try again — the AI occasionally needs a second attempt for complex resumes.")
+                            st.error(f"CV generation error: {str(e)}")
+                            st.info("Tip: try again — occasionally a second attempt is needed for complex resumes.")
         
         # ===== GENERATE COVER LETTER =====
         with col_cl:
-            if st.button("✉️ Generate Cover Letter", key="gen_cl_btn"):
+            if st.button("Generate Cover Letter", key="gen_cl_btn"):
                 resume_text = st.session_state.get('resume_text', '')
                 # Read directly from session state widget keys to avoid column scoping issues
                 cl_position = st.session_state.get('target_position_input', '').strip()
@@ -1265,7 +1265,7 @@ RULES:
                 
                 if resume_text and cl_position and cl_company:
                     log_analytics('premium_cover_letter_generation', f"{cl_position} at {cl_company}")
-                    with st.spinner("✉️ Crafting your premium cover letter..."):
+                    with st.spinner("Crafting your premium cover letter..."):
                         try:
                             rag_context_cl = retrieve_career_guidance(f"cover letter professional {cl_position} {cl_company} African job market")
                             
@@ -1316,14 +1316,14 @@ RULES:
                                 cl_docx = generate_premium_cover_letter_docx(cl_json)
                                 st.session_state['cl_docx'] = cl_docx
                                 st.session_state['cl_generated'] = True
-                                st.success("✅ Premium Cover Letter Generated!")
-                        
+                                st.success("Premium cover letter generated.")
+
                         except Exception as e:
-                            st.error(f"Cover Letter Generation Error: {str(e)}")
-                            st.info("💡 Tip: Try again — the AI occasionally needs a second attempt.")
-                
+                            st.error(f"Cover letter generation error: {str(e)}")
+                            st.info("Tip: try again — occasionally a second attempt is needed.")
+
                 elif not cl_position or not cl_company:
-                    st.warning("⚠️ Please enter the target position and company above to generate a cover letter.")
+                    st.warning("Please enter the target position and company above to generate a cover letter.")
         
         # ===== DOWNLOAD BUTTONS =====
         st.markdown("---")
@@ -1334,7 +1334,7 @@ RULES:
                 cv_data = st.session_state['cv_docx']
                 cv_data.seek(0)
                 st.download_button(
-                    label="⬇️ Download Updated CV (.docx)",
+                    label="Download Updated CV (.docx)",
                     data=cv_data,
                     file_name=f"AfriCareer_Premium_CV_{datetime.now().strftime('%Y%m%d')}.docx",
                     mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -1346,7 +1346,7 @@ RULES:
                 cl_data = st.session_state['cl_docx']
                 cl_data.seek(0)
                 st.download_button(
-                    label="⬇️ Download Cover Letter (.docx)",
+                    label="Download Cover Letter (.docx)",
                     data=cl_data,
                     file_name=f"AfriCareer_CoverLetter_{datetime.now().strftime('%Y%m%d')}.docx",
                     mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -1356,16 +1356,22 @@ RULES:
 # ----- SECTION 2: CAREER GUIDANCE & CV BUILDER -----
 def career_guidance_section():
     log_analytics('section_accessed', 'Career Guidance')
-    
-    st.markdown("## 🎓 Career Guidance & CV Builder")
-    st.markdown("For youth and job seekers: Get personalized guidance and build your CV from scratch.")
-    
-    # ===== CRITICAL: RETRIEVE RAG CONTEXT AT START =====
-    rag_context = retrieve_career_guidance("youth career guidance employability skills Africa")
-    
-    # SIMPLE, HUMANIZED QUESTIONS FOR AFRICAN YOUTH
-    questions_text = f"""
-📋 **Tell Us About Yourself**
+
+    st.markdown("## Career Guidance & CV Builder")
+    st.markdown("For youth and job seekers: get personalized guidance and build a professional CV from scratch.")
+
+    with st.expander("Contact details (used on your CV)"):
+        cc1, cc2 = st.columns(2)
+        with cc1:
+            cv_name = st.text_input("Full name", key="cg_name", placeholder="e.g., Amina Bello")
+            cv_email = st.text_input("Email", key="cg_email", placeholder="e.g., amina@email.com")
+            cv_phone = st.text_input("Phone", key="cg_phone", placeholder="e.g., +234 800 000 0000")
+        with cc2:
+            cv_city = st.text_input("City, Country", key="cg_city", placeholder="e.g., Kano, Nigeria")
+            cv_linkedin = st.text_input("LinkedIn / Portfolio (optional)", key="cg_linkedin", placeholder="e.g., linkedin.com/in/aminabello")
+
+    questions_text = """
+**Tell us about yourself**
 
 Please answer these 5 simple questions (number your answers 1-5):
 
@@ -1376,7 +1382,7 @@ Please answer these 5 simple questions (number your answers 1-5):
    (Example: I'm good at math, I can speak 3 languages, I know how to use Excel, etc.)
 
 3. **What work or experience do you have?**
-   (Include ANY experience: part-time jobs, helping family business, volunteer work, school projects, etc.)
+   (Include ANY experience: part-time jobs, helping a family business, volunteer work, school projects, etc.)
 
 4. **What is your education?**
    (Example: I finished secondary school in 2020, I'm studying at university, I completed a training course, etc.)
@@ -1384,31 +1390,27 @@ Please answer these 5 simple questions (number your answers 1-5):
 5. **What job do you want? What are your goals?**
    (Example: I want to work in a bank, I want to be a nurse, I want to start my own business, etc.)
 
-✍️ **Write your answers below. Be honest - there are no wrong answers!**
+Write your answers below. Be honest — there are no wrong answers.
 """
-    
     st.markdown(questions_text)
-    st.markdown("---")
-    
+
     user_answers = st.text_area(
-        "✍️ Your Answers (Number them 1-5)",
+        "Your answers (number them 1-5)",
         height=250,
         placeholder="1. I'm interested in...\n2. My strengths...\n3. I have experience...\n4. My education...\n5. My goals...",
         key="answers_section2"
     )
-    
+
     col1, col2 = st.columns(2)
-    
+
     with col1:
-        if st.button("🌟 Get Career Guidance", key="advice_btn"):
-            if user_answers:
+        if st.button("Get Career Guidance", key="advice_btn"):
+            if user_answers.strip():
                 log_analytics('query', f"Career guidance: {user_answers[:50]}...")
-                
-                with st.spinner("🤔 Preparing guidance..."):
-                    # ===== CRITICAL: RETRIEVE SPECIFIC RAG CONTEXT =====
-                    rag_context_advice = retrieve_career_guidance(f"career paths employment opportunities skills development Africa {user_answers[:100]}")
-                    
-                    # ===== USE SAFE LLM CALL WITH GUARDRAILS =====
+                with st.spinner("Preparing your guidance..."):
+                    rag_context_advice = retrieve_career_guidance(
+                        f"career paths employment opportunities skills development Africa {user_answers[:100]}"
+                    )
                     advice_prompt = f"""Provide career guidance for African youth based on their profile.
 
 Their Answers: {user_answers}
@@ -1419,182 +1421,309 @@ Provide:
 3. Action Plan (5 concrete steps they can take now)
 
 Ground advice in African job market realities and cite relevant frameworks when applicable."""
+                    st.session_state['cg_guidance'] = safe_llm_call(advice_prompt, rag_context_advice, target_lang)
+            else:
+                st.warning("Please answer the questions first.")
 
-                    guidance = safe_llm_call(advice_prompt, rag_context_advice, target_lang)
-                    
-                    st.success("✅ Guidance Ready!")
-                    st.markdown("### 🎯 Your Career Roadmap")
-                    st.markdown(guidance)
-    
     with col2:
-        if st.button("📄 Generate CV", key="cv_btn"):
-            if user_answers:
+        if st.button("Generate Premium CV", key="cv_btn"):
+            if user_answers.strip():
                 log_analytics('cv_generation', f"User: {user_answers[:50]}...")
-                
-                with st.spinner("📝 Creating your CV..."):
+                with st.spinner("Building your premium ATS-optimized CV..."):
                     try:
-                        # ===== CRITICAL: RETRIEVE RAG CONTEXT FOR CV =====
-                        rag_context_cv = retrieve_career_guidance("professional CV resume best practices African job market ATS")
-                        
-                        # ===== USE SAFE LLM CALL WITH GUARDRAILS =====
-                        cv_prompt = f"""Create a professional, ATS-optimized CV based on this information:
+                        rag_context_cv = retrieve_career_guidance(
+                            "professional CV resume best practices African job market ATS optimization"
+                        )
+                        contact_bits = [b for b in [
+                            cv_email.strip(), cv_phone.strip(), cv_city.strip(), cv_linkedin.strip()
+                        ] if b]
+                        contact_line = " | ".join(contact_bits)
+                        full_name = cv_name.strip()
 
+                        cv_gen_prompt = f"""You are a professional CV writer creating an ATS-optimized CV for the African job market, based on a young jobseeker's answers to 5 questions.
+
+CANDIDATE ANSWERS:
 {user_answers}
 
-Generate:
-- Professional Summary (3-4 sentences)
-- Skills Section (8-10 relevant skills)
-- Experience Section (format their experience professionally)
-- Education Section
-- Additional Sections if relevant
+CANDIDATE CONTACT (use verbatim; do not invent):
+- Full name: {full_name if full_name else "(not provided)"}
+- Contact line: {contact_line if contact_line else "(not provided)"}
 
-Follow African job market standards and ATS optimization best practices."""
+RESPOND ONLY WITH VALID JSON (no markdown, no code blocks, no preamble). Use this exact structure:
+{{
+  "full_name": "the candidate's full name, or empty string if not provided",
+  "credentials": "degree abbreviations if clearly stated (e.g., B.Sc.), else empty string",
+  "contact_line": "the contact line provided, or empty string",
+  "professional_summary": "3-4 sentence summary based ONLY on what the candidate said, tailored to the African market",
+  "core_competencies": ["6-10 ATS keyword-rich skills drawn from their answers"],
+  "work_experience": [
+    {{
+      "title": "role or what they did",
+      "company": "organization ONLY if they named one, else omit this key",
+      "location": "ONLY if they gave one, else omit this key",
+      "dates": "ONLY if they gave dates, else omit this key",
+      "bullets": ["2-4 achievement-oriented bullets based on what they actually described"]
+    }}
+  ],
+  "education": [
+    {{
+      "degree": "their education level or qualification as they described it",
+      "institution": "ONLY if they named one, else omit this key",
+      "dates": "ONLY if they gave a year, else omit this key"
+    }}
+  ],
+  "certifications": ["ONLY if they mentioned any; else empty list"],
+  "technical_skills": "comma-separated tools/software they mentioned, or empty string",
+  "languages": ["languages they mentioned with proficiency, or empty list"]
+}}
 
-                        cv_content = safe_llm_call(cv_prompt, rag_context_cv, target_lang)
-                        
-                        # Create DOCX
-                        doc = Document()
-                        
-                        # Header
-                        header = doc.add_heading(f'{APP_NAME}', 0)
-                        header.alignment = WD_ALIGN_PARAGRAPH.CENTER
-                        
-                        # Add CV content
-                        for line in cv_content.split('\n'):
-                            if line.strip():
-                                if line.startswith('#'):
-                                    doc.add_heading(line.replace('#', '').strip(), level=1)
-                                else:
-                                    doc.add_paragraph(line)
-                        
-                        # Footer
-                        footer = doc.add_paragraph(f'\n\nGenerated by {APP_NAME} • {datetime.now().strftime("%B %d, %Y")}')
-                        footer.alignment = WD_ALIGN_PARAGRAPH.CENTER
-                        
-                        # Save to bytes
-                        bio = io.BytesIO()
-                        doc.save(bio)
-                        bio.seek(0)
-                        
-                        st.success("✅ CV Generated!")
-                        st.download_button(
-                            label="⬇️ Download Your CV",
-                            data=bio,
-                            file_name=f"AfriCareer_CV_{datetime.now().strftime('%Y%m%d')}.docx",
-                            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                        )
-                        
+CRITICAL RULES:
+- Use ONLY facts the candidate provided. Do NOT invent employers, job titles, dates, metrics, or degrees.
+- NEVER output placeholder text such as "[Your Name]", "[Start Date]", "[City]", or "[Company]". If a detail is unknown, OMIT that key entirely (or use an empty string/list where the schema requires the key).
+- For informal experience (family business, volunteering, school projects), represent it honestly and professionally.
+- Return ONLY the JSON object, nothing else."""
+
+                        cv_json = safe_llm_call(cv_gen_prompt, rag_context_cv, "English")
+                        if cv_json.startswith("⚠️"):
+                            st.warning(cv_json)
+                        else:
+                            st.session_state['cg_cv_docx'] = generate_premium_cv_docx(cv_json)
+                            st.session_state['cg_cv_generated'] = True
+                            st.success("Premium CV generated.")
                     except Exception as e:
-                        st.error(f"Error: {str(e)}")
+                        st.error(f"CV generation error: {str(e)}")
+                        st.info("Tip: add a few more details to your answers and try again.")
             else:
-                st.warning("⚠️ Please answer the questions first")
+                st.warning("Please answer the questions first.")
+
+    if st.session_state.get('cg_guidance'):
+        st.markdown("---")
+        st.markdown("### Your Career Roadmap")
+        st.markdown(st.session_state['cg_guidance'])
+
+    if st.session_state.get('cg_cv_generated'):
+        st.markdown("---")
+        cv_data = st.session_state['cg_cv_docx']
+        cv_data.seek(0)
+        st.download_button(
+            label="Download Premium CV (.docx)",
+            data=cv_data,
+            file_name=f"AfriCareer_Premium_CV_{datetime.now().strftime('%Y%m%d')}.docx",
+            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            key="cg_dl_cv_btn"
+        )
+
+# ----- LINK VERIFICATION (guarantees no hallucinated / dead course links) -----
+TAVILY_API_KEY = os.getenv("TAVILY_API_KEY", "").strip()
+_BROWSER_UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+               "(KHTML, like Gecko) Chrome/124.0 Safari/537.36")
+
+# Reputable providers -> search deep-link templates. A search query cannot 404 to a fake course.
+_PROVIDER_SEARCH = {
+    "coursera": "https://www.coursera.org/search?query={q}",
+    "edx": "https://www.edx.org/search?q={q}",
+    "udemy": "https://www.udemy.com/courses/search/?q={q}",
+    "udacity": "https://www.udacity.com/catalog?searchValue={q}",
+    "class central": "https://www.classcentral.com/search?q={q}",
+    "classcentral": "https://www.classcentral.com/search?q={q}",
+    "freecodecamp": "https://www.freecodecamp.org/news/search/?query={q}",
+    "khan academy": "https://www.khanacademy.org/search?page_search_query={q}",
+    "khanacademy": "https://www.khanacademy.org/search?page_search_query={q}",
+    "linkedin learning": "https://www.linkedin.com/learning/search?keywords={q}",
+    "youtube": "https://www.youtube.com/results?search_query={q}",
+    "alison": "https://alison.com/courses?query={q}",
+    "futurelearn": "https://www.futurelearn.com/search?q={q}",
+}
+
+def provider_search_url(provider: str, query: str) -> str:
+    """Build a real search deep-link on the given provider (defaults to Class Central)."""
+    q = quote_plus((query or "").strip())
+    p = (provider or "").lower()
+    for key, tmpl in _PROVIDER_SEARCH.items():
+        if key in p:
+            return tmpl.format(q=q)
+    return f"https://www.classcentral.com/search?q={q}"
+
+@st.cache_data(ttl=3600, show_spinner=False)
+def verify_url(url: str, timeout: float = 6.0) -> bool:
+    """Return True if the URL is reachable (HTTP status < 400) with a browser-like request."""
+    if not url or not url.startswith(("http://", "https://")):
+        return False
+    try:
+        with httpx.Client(follow_redirects=True, timeout=timeout,
+                          headers={"User-Agent": _BROWSER_UA}) as client:
+            return client.get(url).status_code < 400
+    except Exception:
+        return False
+
+@st.cache_data(ttl=1800, show_spinner=False)
+def web_search_links(query: str, max_results: int = 4):
+    """Real course URLs from Tavily web search if TAVILY_API_KEY is set, else []."""
+    if not TAVILY_API_KEY:
+        return []
+    try:
+        with httpx.Client(timeout=12.0) as client:
+            resp = client.post(
+                "https://api.tavily.com/search",
+                json={"api_key": TAVILY_API_KEY, "query": query,
+                      "max_results": max_results, "search_depth": "basic"},
+            )
+            return [{"title": r.get("title", r.get("url", "")), "url": r.get("url", "")}
+                    for r in resp.json().get("results", []) if r.get("url")]
+    except Exception:
+        return []
 
 # ----- SECTION 3: LEARNING RESOURCES -----
 def learning_resources_section():
     log_analytics('section_accessed', 'Learning Resources')
-    
-    st.markdown("## 📚 Learning Resources & Courses")
-    
-    st.info("💡 **Tip:** We provide course recommendations and platforms. Always verify links directly on the platform websites (Coursera, edX, Udemy, etc.) as course URLs change frequently.")
-    st.warning("⚠️ **For Free Courses:** Check Class Central - it aggregates 50,900+ free courses from top universities!")
-    
-    st.markdown("---")
-    
-    st.markdown("### 🎯 What would you like to learn?")
-    
-    learning_interest = st.text_area(
-        "📝 Describe what you want to learn",
-        placeholder="e.g., data analysis, solar installation, digital marketing, tailoring & small business skills",
-        help="The more specific, the better recommendations we can provide"
+
+    st.markdown("## Learning Resources & Courses")
+    st.markdown(
+        "Get course recommendations matched to your goals. Every link below is built by the app "
+        "and checked live before it is shown — so you never get a broken or made-up link."
     )
-    
+
+    learning_interest = st.text_area(
+        "What would you like to learn?",
+        placeholder="e.g., data analysis, solar installation, digital marketing, tailoring & small business skills",
+        help="The more specific, the better the recommendations."
+    )
+
     col1, col2 = st.columns(2)
-    
     with col1:
-        course_type = st.selectbox(
-            "Course Type",
-            ["Both free & Paid", "Free Only", "Paid Only"]
-        )
-    
+        course_type = st.selectbox("Cost preference", ["Free & Paid", "Free only", "Paid only"])
     with col2:
-        skill_level = st.selectbox(
-            "Your Level",
-            ["Beginner", "Intermediate", "Advanced"]
-        )
-    
-    if st.button("🔍 Find Courses", key="course_search_btn"):
-        if learning_interest:
-            log_analytics('course_search', learning_interest)
-            
-            with st.spinner("🔎 Searching for courses..."):
-                # ===== CRITICAL: RETRIEVE RAG CONTEXT =====
-                rag_context_learning = retrieve_career_guidance(f"skills development training courses {learning_interest} African youth")
-                
-                # ===== USE SAFE LLM CALL WITH GUARDRAILS =====
-                course_prompt = f"""Recommend learning resources for:
+        skill_level = st.selectbox("Your level", ["Beginner", "Intermediate", "Advanced"])
 
-Topic: {learning_interest}
+    if st.button("Find Courses", key="course_search_btn"):
+        if not learning_interest.strip():
+            st.warning("Please describe what you want to learn.")
+            return
+
+        log_analytics('course_search', learning_interest)
+        with st.spinner("Finding and verifying courses..."):
+            rag_context_learning = retrieve_career_guidance(
+                f"skills development training courses {learning_interest} African youth"
+            )
+            course_prompt = f"""Recommend 5 high-quality, real learning resources for an African youth who wants to learn: {learning_interest}
 Level: {skill_level}
-Preference: {course_type}
+Cost preference: {course_type}
 
-Provide:
-1. Platform Coursera - 2-3 recommended courses (title only, no direct links)
-2. Provider: deeplearning.ai - 1-2 specialized courses
-3. Provider: Udacity - 1-2 relevant courses
-4. How to Find: Specific search terms for Class Central
-5. Duration: Approx. time commitment (e.g., 3 months)
-6. Prerequisites: What they should know first
+Return ONLY valid JSON (no markdown, no code fences) - an array of objects with this exact shape:
+[
+  {{
+    "title": "specific, real course or specialization title",
+    "provider": "one of: Coursera, edX, Udemy, Udacity, Class Central, freeCodeCamp, Khan Academy, LinkedIn Learning, YouTube, Alison, FutureLearn",
+    "cost": "Free | Paid | Free & Paid",
+    "level": "Beginner | Intermediate | Advanced",
+    "duration": "approx. time commitment, e.g. '3 months'",
+    "why": "one sentence on why it fits this learner and the African job market"
+  }}
+]
 
-Note: Emphasize that users should search course titles on provider platforms directly. Mention Class Central for free options."""
+RULES:
+- Do NOT include any URLs or links - the app builds and verifies links itself.
+- Prefer well-known, currently-offered courses. Respect the cost preference.
+- Return ONLY the JSON array, nothing else."""
 
-                recommendations = safe_llm_call(course_prompt, rag_context_learning, target_lang)
+            raw = safe_llm_call(course_prompt, rag_context_learning, "English")
 
-                st.markdown("### 📚 Course Recommendations")
-                st.markdown(recommendations)
+            if raw.startswith("⚠️"):
+                st.warning(raw)
+                return
 
-                st.markdown("---")
-                st.info(
-                    "💡 **How to enroll:** Search these course titles directly on the provider's "
-                    "website (Coursera, edX, Udacity, deeplearning.ai) — course URLs change often, "
-                    "so titles are more reliable than links. For free options, "
-                    "[Class Central](https://www.classcentral.com) aggregates 50,000+ free courses "
-                    "from top universities; filter by topic, language, and cost."
-                )
-        else:
-            st.warning("⚠️ Please describe what you want to learn")
+            recs = []
+            try:
+                recs = json.loads(raw)
+            except json.JSONDecodeError:
+                import re
+                m = re.search(r'\[[\s\S]*\]', raw)
+                if m:
+                    try:
+                        recs = json.loads(m.group(0))
+                    except Exception:
+                        recs = []
+
+            if not isinstance(recs, list) or not recs:
+                st.info("Couldn't structure the results this time. Please try a more specific topic.")
+                return
+
+            st.markdown("### Recommended Courses")
+            st.caption("Links are verified live. If a provider blocks automated checks, the link falls back to Class Central.")
+
+            for rec in recs:
+                if not isinstance(rec, dict):
+                    continue
+                title = str(rec.get("title", "")).strip()
+                if not title:
+                    continue
+                provider = str(rec.get("provider", "")).strip()
+                cost = str(rec.get("cost", "")).strip()
+                level = str(rec.get("level", "")).strip()
+                duration = str(rec.get("duration", "")).strip()
+                why = str(rec.get("why", "")).strip()
+
+                url = provider_search_url(provider, title)
+                ok = verify_url(url)
+                label_provider = provider or "Class Central"
+                if not ok:
+                    url = provider_search_url("class central", title)
+                    ok = verify_url(url)
+                    label_provider = "Class Central"
+
+                meta = " · ".join([x for x in [provider, cost, level, duration] if x])
+                st.markdown(f"**{title}**")
+                if meta:
+                    st.caption(meta)
+                if why:
+                    st.markdown(why)
+                if ok:
+                    st.markdown(f"[Find this course on {label_provider} →]({url})")
+                else:
+                    st.caption("Live link check failed — search this title on classcentral.com.")
+                st.markdown("")
+
+            if TAVILY_API_KEY:
+                live = web_search_links(f"{learning_interest} {skill_level} online course")
+                verified_live = [l for l in live if verify_url(l["url"])]
+                if verified_live:
+                    st.markdown("### Verified Direct Links (live web search)")
+                    for l in verified_live:
+                        st.markdown(f"- [{l['title']}]({l['url']})")
+
+            st.info(
+                "For free options, [Class Central](https://www.classcentral.com) aggregates 50,000+ "
+                "free courses from top universities — filter by topic, language, and cost."
+            )
 
 # ----- SECTION 4: AI ASSISTANT -----
 def ai_assistant_section():
     log_analytics('section_accessed', 'AI Assistant')
     
-    st.markdown("## 💬 AI Career Assistant")
+    st.markdown("## AI Career Assistant")
     st.markdown("Ask any career-related question and get personalized guidance.")
-    
-    # ===== CRITICAL: SHOW SAFETY NOTICE =====
-    st.info("🛡️ **This assistant is designed specifically for career guidance.** It provides advice on careers, education, job searching, and professional development based on AfDB, UNICEF, and ILO frameworks for African youth.")
-    
+
+    st.info("This assistant focuses on careers, education, job searching, and professional development, grounded in AfDB, UNICEF, and ILO frameworks for African youth.")
+
     question = st.text_area(
-        "💭 Ask Your Question",
+        "Ask your question",
         placeholder="What skills should African youth prioritize according to international development frameworks for employability?",
         help="Ask about career paths, skills, education, job search, etc.",
         height=120
     )
-    
-    if st.button("🤖 Ask AI Assistant", key="ask_ai_btn"):
+
+    if st.button("Ask AI Assistant", key="ask_ai_btn"):
         if question:
             log_analytics('query', f"AI Assistant: {question}")
-            
-            with st.spinner("🤔 Thinking..."):
-                # ===== CRITICAL: RETRIEVE RAG CONTEXT =====
+
+            with st.spinner("Thinking..."):
                 rag_context = retrieve_career_guidance(question)
-                
-                # ===== USE SAFE LLM CALL WITH GUARDRAILS =====
                 response_content = safe_llm_call(question, rag_context, target_lang)
-                
-                st.markdown("### 🎯 Response")
+
+                st.markdown("### Response")
                 st.markdown(response_content)
         else:
-            st.warning("⚠️ Please enter a question above before clicking 'Ask AI Assistant'")
+            st.warning("Please enter a question above before clicking 'Ask AI Assistant'.")
 
 # ----- ACCESS GATE -----
 def require_access():
@@ -1604,16 +1733,16 @@ def require_access():
     if st.session_state.get("access_granted"):
         return True
 
-    st.title(f"🌍 {APP_NAME}")
+    st.title(APP_NAME)
     st.markdown(f"### *{TAGLINE}*")
-    st.info("🔐 This is a private pilot. Please enter your access code to continue.")
+    st.info("This is a private pilot. Please enter your access code to continue.")
     entered = st.text_input("Access code", type="password", key="access_code_input")
     if st.button("Enter"):
         if entered.strip() == APP_ACCESS_CODE:
             st.session_state["access_granted"] = True
             st.rerun()
         else:
-            st.error("❌ Invalid access code. Please contact the AfriCareer AI team.")
+            st.error("Invalid access code. Please contact the AfriCareer AI team.")
     return False
 
 # ----- MAIN APP -----
@@ -1631,7 +1760,7 @@ def main():
         log_analytics('user_visit')
         st.session_state['user_logged'] = True
     
-    st.title(f"🌍 {APP_NAME}")
+    st.title(APP_NAME)
     st.markdown(f"### *{TAGLINE}*")
     st.markdown("**Developed by:** Quantium Insights LLC")
 
@@ -1647,11 +1776,11 @@ def main():
     target_lang = LANGUAGES[selected_display]
 
     tabs = st.tabs([
-        "ℹ️ About",
-        "🎓 Career Guidance",
-        "📚 Learning Resources",
-        "💬 AI Assistant",
-        "📄 Resume Analysis",
+        "About",
+        "Career Guidance",
+        "Learning Resources",
+        "AI Assistant",
+        "Resume Analysis",
     ])
 
     with tabs[0]:
@@ -1660,28 +1789,28 @@ def main():
 
         **AfriCareer AI** is an AI-powered career guidance platform for African youth.
 
-        ### 🎯 Mission
+        ### Mission
         Empower urban African youth with professional, accessible career services.
 
-        ### ✨ Key Features
+        ### Key Features
         - **9 Languages:** English, French, Swahili, Arabic, Hausa, Pidgin, Portuguese, Spanish, Amharic
         - **ATS-Optimized CV Builder:** Clean, recruiter-ready formatting
         - **Cultural Grounding:** RAG grounded in UNICEF, ILO, and AfDB frameworks
         - **Youth-Centric:** Designed for adolescents and young professionals
         - **Safety Guardrails:** Focused, appropriate career guidance
 
-        ### 📚 Knowledge Base
+        ### Knowledge Base
         Our AI is grounded in authoritative frameworks:
         - **AfDB SEPA (2022–2025):** Skills for Employability and Productivity in Africa
         - **UNICEF Education Strategy (2019–2030):** Every Child Learns
         - **ILO Global Employment Trends for Youth (2022):** Investing in Transforming Futures
 
-        ### 👨‍💻 Developer
+        ### Developer
         **Dr. Amobi Andrew Onovo**
         - PhD Global Health, MPH, PGDip Data Science
         - Global health & data science specialist, Nigeria
 
-        ### 🔒 Safety & Ethics
+        ### Safety & Ethics
         AfriCareer AI includes guardrails to ensure:
         - Mission-aligned responses (career guidance)
         - No inappropriate or harmful content
