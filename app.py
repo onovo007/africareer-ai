@@ -21,9 +21,9 @@ from urllib.parse import quote_plus
 # ----- BRANDING -----
 COMPANY_NAME = "Quantium Insights LLC"
 APP_NAME = "AfriCareer AI"
-TAGLINE = "Empowering African Youth Through Intelligent Career Solutions"
+TAGLINE = "Intelligent career and academic guidance for African youth and professionals"
 
-# Supported languages — rendered at the TOP of the main page (mobile-first: no sidebar needed)
+# Supported languages - rendered at the TOP of the main page (mobile-first: no sidebar needed)
 LANGUAGES = {
     "🇬🇧 English": "English",
     "🇫🇷 Français": "French",
@@ -111,7 +111,7 @@ RESPONSE STYLE:
 
 # ----- PREMIUM THEME & STYLING -----
 st.set_page_config(
-    page_title=f"{APP_NAME} - Career Guidance for African Youth",
+    page_title=f"{APP_NAME} - Career and Academic Guidance for Africa",
     page_icon="🌍",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -579,7 +579,7 @@ def generate_premium_cv_docx(cv_json_str):
             r = p.add_run(job.get("title", ""))
             set_run(r, size=11, color=NAVY, bold=True)
             if job.get("company"):
-                r = p.add_run(f" — {job['company']}")
+                r = p.add_run(f" - {job['company']}")
                 set_run(r, size=11, color=DARK)
 
             # Location + Dates
@@ -619,7 +619,7 @@ def generate_premium_cv_docx(cv_json_str):
                 r = p2.add_run(f"{edu['institution']}")
                 set_run(r, size=10, color=DARK)
                 if edu.get("dates"):
-                    r = p2.add_run(f" — {edu['dates']}")
+                    r = p2.add_run(f" - {edu['dates']}")
                     set_run(r, size=10, color=GRAY, italic=True)
 
     # ===== SELECTED PUBLICATIONS =====
@@ -888,6 +888,44 @@ Source: ILO Global Employment Trends for Youth 2022""",
 7. Tourism & Hospitality: Service sector growth
 Source: AfDB, ILO, UNICEF frameworks""",
             "source": "Multi-source"
+        },
+        {
+            "id": "motivation_letter_best_practices",
+            "text": """Motivation / Statement of Purpose Best Practices (university and scholarship applications):
+1. Open with a specific hook: name the exact programme or scholarship and one concrete reason it fits you.
+2. Show fit, not just interest: map your background, skills and achievements to the programme's stated focus.
+3. Be evidence-based: use specific examples, results and numbers rather than generic claims.
+4. Address 'why this institution' with a real detail about the school, department, supervisor or values.
+5. State clear goals: how the programme advances your academic or career path and, where relevant, impact for Africa.
+6. Structure: hook, fit, evidence, why-this-school, goals, and a confident close.
+7. Be honest: never invent grades, awards or experience. Keep it concise (usually one page).
+Source: Global admissions and scholarship guidance (compiled best practice)""",
+            "source": "Education Best Practice"
+        },
+        {
+            "id": "scholarship_application_best_practices",
+            "text": """Scholarship Application Best Practices:
+1. Demonstrate BOTH merit (achievements, grades, leadership) and motivation (why the field and why now).
+2. Align with the scholarship's mission and values (leadership, development impact, equity).
+3. Show impact: what you will do with the opportunity, especially contribution to your community or country.
+4. Where relevant and allowed, explain financial or contextual need clearly and with dignity.
+5. Quantify achievements and leadership roles; use concrete, verifiable examples.
+6. Follow all instructions exactly (word limits, prompts, required documents, deadlines).
+7. Scholarships open to African students include Chevening, Mastercard Foundation Scholars, DAAD, Commonwealth, Fulbright, and MEXT, plus many university-specific awards.
+Source: Scholarship guidance (compiled best practice)""",
+            "source": "Education Best Practice"
+        },
+        {
+            "id": "phd_research_statement_best_practices",
+            "text": """PhD / Doctoral Application and Research Statement Best Practices:
+1. Define a clear research interest or question and connect it to the department's or supervisor's work.
+2. Evidence research capability: prior research, methods, publications, presentations, and technical skills.
+3. Name the fit: cite the specific group, lab, or supervisor and why their work matches yours.
+4. Show independence and readiness: what you can contribute early, and your long-term research goals.
+5. Reference only methods you actually know; avoid overclaiming.
+6. Keep it rigorous, specific and scholarly; align with the programme's requirements and funding.
+Source: Doctoral admissions guidance (compiled best practice)""",
+            "source": "Education Best Practice"
         }
     ]
     
@@ -1084,7 +1122,7 @@ def admin_dashboard():
                             new_stats = index.describe_index_stats()
                             new_total = new_stats.get('total_vector_count', 0)
                             
-                            st.success(f"Document added — {len(chunks)} chunks indexed.")
+                            st.success(f"Document added - {len(chunks)} chunks indexed.")
                             st.success(f"New total: {new_total} chunks in knowledge base (+{len(chunks)} from this upload).")
                             st.info(f"Document ID: {doc_id}")
                         else:
@@ -1215,10 +1253,10 @@ Provide:
                             
                             cv_gen_prompt = f"""You are a professional CV writer specializing in ATS-optimized resumes for the African job market.
 
-ORIGINAL RESUME (this is the ground truth — use ONLY what appears here):
+ORIGINAL RESUME (this is the ground truth - use ONLY what appears here):
 {resume_text[:16000]}
 
-ANALYSIS FEEDBACK (apply wording/structure improvements ONLY — do NOT add new facts):
+ANALYSIS FEEDBACK (apply wording/structure improvements ONLY - do NOT add new facts):
 {feedback[:2000]}
 
 Rewrite the resume into an improved, premium, ATS-optimized CV.
@@ -1227,9 +1265,9 @@ RESPOND ONLY WITH VALID JSON (no markdown, no code blocks, no preamble). Use thi
 {{
   "full_name": "full name exactly as in the resume",
   "credentials": "degree abbreviations that appear in the resume (e.g., Ph.D., M.P.H., B.Sc.)",
-  "contact_line": "email | phone | city, country | LinkedIn — only the parts present in the resume",
+  "contact_line": "email | phone | city, country | LinkedIn - only the parts present in the resume",
   "professional_summary": "3-4 sentence summary built ONLY from resume facts, tailored for the African market",
-  "selected_achievements": ["4-6 of the strongest, most quantified achievements taken from the resume — keep the numbers, scale, and outcomes exactly as stated"],
+  "selected_achievements": ["4-6 of the strongest, most quantified achievements taken from the resume - keep the numbers, scale, and outcomes exactly as stated"],
   "core_competencies": ["8-12 ATS keyword-rich skills that are supported by the resume"],
   "work_experience": [
     {{
@@ -1251,7 +1289,7 @@ RESPOND ONLY WITH VALID JSON (no markdown, no code blocks, no preamble). Use thi
 }}
 
 CRITICAL RULES (accuracy matters more than polish):
-- Include EVERY employer and role that appears in the resume — do NOT drop any position (all organizations such as HJF, USAID, UNICEF, etc. must appear if they are in the resume).
+- Include EVERY employer and role that appears in the resume - do NOT drop any position (all organizations such as HJF, USAID, UNICEF, etc. must appear if they are in the resume).
 - Do NOT invent or add anything absent from the resume: no new employers, dates, metrics, degrees, publications, tools, or languages. If the resume does not list a language, the languages array MUST be empty.
 - You may rephrase and quantify ONLY using numbers already present in the resume.
 - Return ONLY the JSON object, nothing else."""
@@ -1268,7 +1306,7 @@ CRITICAL RULES (accuracy matters more than polish):
                         
                         except Exception as e:
                             st.error(f"CV generation error: {str(e)}")
-                            st.info("Tip: try again — occasionally a second attempt is needed for complex resumes.")
+                            st.info("Tip: try again - occasionally a second attempt is needed for complex resumes.")
         
         # ===== GENERATE COVER LETTER =====
         with col_cl:
@@ -1291,15 +1329,15 @@ CRITICAL RULES (accuracy matters more than polish):
 
                             cl_gen_prompt = f"""You are a professional cover letter writer. Generate a premium, compelling, tailored cover letter.
 
-CANDIDATE'S RESUME (ground truth — use only what appears here):
+CANDIDATE'S RESUME (ground truth - use only what appears here):
 {resume_text[:16000]}
 
 TARGET POSITION: {cl_position}
 TARGET COMPANY: {cl_company}
 LOCATION CONTEXT: {st.session_state.get('resume_city', 'Africa')}
 
-ORGANIZATION RESEARCH (verified web results about the company; use these specifics to tailor the letter — do NOT invent facts beyond this):
-{org_research if org_research else "(No live research available — rely on widely-known general facts about the company and do not fabricate specifics.)"}
+ORGANIZATION RESEARCH (verified web results about the company; use these specifics to tailor the letter - do NOT invent facts beyond this):
+{org_research if org_research else "(No live research available - rely on widely-known general facts about the company and do not fabricate specifics.)"}
 
 RESPOND ONLY WITH VALID JSON (no markdown, no code blocks, no preamble). Use this exact structure:
 {{
@@ -1314,7 +1352,7 @@ RESPOND ONLY WITH VALID JSON (no markdown, no code blocks, no preamble). Use thi
     "Opening: name the exact role and connect it to the organization's core mission or a specific priority from the ORGANIZATION RESEARCH; add a one-sentence positioning of who you are and why you fit.",
     "Map your single most relevant experience directly to what this role does, using specific achievements and metrics that appear in the resume.",
     "Show a second capability the role needs (technical or domain), with concrete evidence and any validation or results from the resume.",
-    "Demonstrate specific knowledge of the organization (from the ORGANIZATION RESEARCH — a real product, programme, or value) and connect your goals to theirs.",
+    "Demonstrate specific knowledge of the organization (from the ORGANIZATION RESEARCH - a real product, programme, or value) and connect your goals to theirs.",
     "Close: reaffirm interest, note availability, and invite an interview."
   ],
   "closing_line": "Respectfully submitted,",
@@ -1324,7 +1362,7 @@ RESPOND ONLY WITH VALID JSON (no markdown, no code blocks, no preamble). Use thi
 }}
 
 RULES:
-- Use ONLY factual details from the resume for the candidate's experience — do NOT invent achievements, employers, or metrics.
+- Use ONLY factual details from the resume for the candidate's experience - do NOT invent achievements, employers, or metrics.
 - Make the company paragraph SPECIFIC using the ORGANIZATION RESEARCH above (reference a real product, mission point, or recent priority). If no research is available, keep company statements general and do not fabricate specifics.
 - Each body paragraph should be 3-5 sentences, substantive and specific.
 - Use a confident, professional tone; highlight quantified achievements only where the resume provides the numbers.
@@ -1342,7 +1380,7 @@ RULES:
 
                         except Exception as e:
                             st.error(f"Cover letter generation error: {str(e)}")
-                            st.info("Tip: try again — occasionally a second attempt is needed.")
+                            st.info("Tip: try again - occasionally a second attempt is needed.")
 
                 elif not cl_position or not cl_company:
                     st.warning("Please enter the target position and company above to generate a cover letter.")
@@ -1412,7 +1450,7 @@ Please answer these 5 simple questions (number your answers 1-5):
 5. **What job do you want? What are your goals?**
    (Example: I want to work in a bank, I want to be a nurse, I want to start my own business, etc.)
 
-Write your answers below. Be honest — there are no wrong answers.
+Write your answers below. Be honest - there are no wrong answers.
 """
     st.markdown(questions_text)
 
@@ -1601,8 +1639,8 @@ def verify_url(url: str, timeout: float = 6.0) -> bool:
 
     2xx/3xx = OK. Anti-bot blocks (401/403/405/429/999) also count as OK: the page
     exists for real browsers even though it refuses automated requests (Class Central,
-    Udemy, LinkedIn do this). Only clear failures — 404/410/5xx, timeouts, or DNS/
-    connection errors — return False.
+    Udemy, LinkedIn do this). Only clear failures - 404/410/5xx, timeouts, or DNS/
+    connection errors - return False.
     """
     if not url or not url.startswith(("http://", "https://")):
         return False
@@ -1663,7 +1701,7 @@ def learning_resources_section():
     st.markdown("## Learning Resources & Courses")
     st.markdown(
         "Get course recommendations matched to your goals. Every link below is built by the app "
-        "and checked live before it is shown — so you never get a broken or made-up link."
+        "and checked live before it is shown - so you never get a broken or made-up link."
     )
 
     learning_interest = st.text_area(
@@ -1765,7 +1803,7 @@ RULES:
             if items:
                 st.markdown(f"### Recommended Courses ({course_type})")
                 st.caption('Cost is checked against the provider; "Free" means the content is accessible at no cost '
-                           '(Coursera/edX can be audited free — a certificate may cost extra). Links are verified live.')
+                           '(Coursera/edX can be audited free - a certificate may cost extra). Links are verified live.')
                 for it in items:
                     url = provider_search_url(it["provider"], it["title"])
                     ok = verify_url(url)
@@ -1783,7 +1821,7 @@ RULES:
                     if ok:
                         st.markdown(f"[Find this course on {label_provider} →]({url})")
                     else:
-                        st.caption("Live link check failed — search this title on classcentral.com.")
+                        st.caption("Live link check failed - search this title on classcentral.com.")
                     st.markdown("")
             else:
                 st.info(f"No strictly {course_type.lower()} matches came back for that topic. "
@@ -1885,8 +1923,35 @@ def motivation_letters_section():
     log_analytics('section_accessed', 'Motivation Letters')
 
     st.markdown("## Motivation & Scholarship Letters")
-    st.markdown("Generate a strong, tailored letter for a university application or scholarship — "
+    st.markdown("Generate a strong, tailored letter for a university application or scholarship, "
                 "grounded in your real background and live research on the school.")
+
+    with st.expander("Find live opportunities (scholarships, PhD, admissions)"):
+        st.caption("Searches the web in real time for current opportunities and their requirements.")
+        oc1, oc2, oc3 = st.columns(3)
+        with oc1:
+            opp_type = st.selectbox("Type", ["Scholarship", "PhD / Doctorate", "Undergraduate / Masters"], key="opp_type")
+        with oc2:
+            opp_field = st.text_input("Field / subject", key="opp_field", placeholder="e.g., public health")
+        with oc3:
+            opp_region = st.selectbox("Region", list(SCHOOLS.keys()), key="opp_region")
+        if st.button("Search opportunities", key="opp_search"):
+            if not TAVILY_API_KEY:
+                st.info("Live opportunity search needs the TAVILY_API_KEY secret to be set.")
+            elif not opp_field.strip():
+                st.warning("Please enter a field or subject.")
+            else:
+                with st.spinner("Searching the web for current opportunities..."):
+                    yr = datetime.now().year
+                    oq = f"{opp_type} opportunities {opp_field} {opp_region} {yr} {yr + 1} application requirements deadline"
+                    opp_results = [l for l in web_search_links(oq, max_results=6) if verify_url(l["url"])]
+                if opp_results:
+                    st.markdown("**Verified opportunities (live web search):**")
+                    for l in opp_results:
+                        st.markdown(f"- [{l['title']}]({l['url']})")
+                    st.caption("Open a link, note the requirements, then use the letter generator below to draft your application.")
+                else:
+                    st.info("No verified results this time. Try a broader field or a different region.")
 
     category = st.radio(
         "What are you applying for?",
@@ -1975,14 +2040,14 @@ PROGRAMME / SCHOLARSHIP: {programme}
 APPLICANT NAME: {ml_name.strip() if ml_name.strip() else "(not provided)"}
 APPLICANT CONTACT: {ml_contact if ml_contact else "(not provided)"}
 
-APPLICANT BACKGROUND (ground truth — use ONLY what appears here):
+APPLICANT BACKGROUND (ground truth - use ONLY what appears here):
 {ml_answers[:6000] if ml_answers.strip() else "(rely on the uploaded programme info; do not invent applicant facts)"}
 
 PROGRAMME / SCHOLARSHIP DETAILS (from the uploaded document, if any):
 {prog_info[:4000]}
 
-SCHOOL RESEARCH (verified web results — use to tailor 'why this school'; do NOT invent beyond this):
-{school_research if school_research else "(No live research available — keep school references general and do not fabricate specifics.)"}
+SCHOOL RESEARCH (verified web results - use to tailor 'why this school'; do NOT invent beyond this):
+{school_research if school_research else "(No live research available - keep school references general and do not fabricate specifics.)"}
 
 CATEGORY GUIDANCE: {cat_guidance}
 
@@ -1997,9 +2062,9 @@ RESPOND ONLY WITH VALID JSON (no markdown, no code fences). Use this exact struc
   "salutation": "Dear Members of the Selection Committee,",
   "body_paragraphs": [
     "Opening: state exactly what you are applying for and connect it to a specific strength of the programme/school (use SCHOOL RESEARCH); one-sentence positioning of who you are.",
-    "Your most relevant background and achievements mapped to what this programme values — specific, using only facts provided.",
+    "Your most relevant background and achievements mapped to what this programme values - specific, using only facts provided.",
     "A second dimension appropriate to the category (research fit / academic strength / leadership / impact), with concrete evidence.",
-    "Why THIS institution and programme specifically (use SCHOOL RESEARCH — a real focus, value, or feature) and how it fits your goals.",
+    "Why THIS institution and programme specifically (use SCHOOL RESEARCH - a real focus, value, or feature) and how it fits your goals.",
     "Close: restate motivation, note readiness/availability, and thank the committee."
   ],
   "closing_line": "Yours sincerely,",
@@ -2009,7 +2074,7 @@ RESPOND ONLY WITH VALID JSON (no markdown, no code fences). Use this exact struc
 }}
 
 RULES:
-- Use ONLY facts from the applicant background / uploaded info — do NOT invent grades, awards, experiences, or publications.
+- Use ONLY facts from the applicant background / uploaded info - do NOT invent grades, awards, experiences, or publications.
 - Make school-specific statements grounded in SCHOOL RESEARCH; if none is available, keep them general.
 - Return ONLY the JSON object, nothing else."""
 
@@ -2045,10 +2110,12 @@ def render_landing():
     st.markdown(f"""
     <div class="africareer-hero">
         <h1>{APP_NAME}</h1>
-        <p>{TAGLINE}. Build an ATS-ready CV, get personalized career guidance, and find
-        verified courses — free, multilingual, and made for African youth.</p>
+        <p>{TAGLINE}. Build an ATS-ready CV, generate researched cover and motivation letters,
+        get career guidance, and find verified courses. Free, multilingual, and built for
+        African youth and professionals.</p>
         <div class="hero-chips">
             <span class="hero-chip">ATS-optimized CVs</span>
+            <span class="hero-chip">Cover &amp; motivation letters</span>
             <span class="hero-chip">9 African languages</span>
             <span class="hero-chip">Verified learning links</span>
             <span class="hero-chip">24/7 AI guidance</span>
@@ -2098,7 +2165,7 @@ def main():
     st.markdown(f"### *{TAGLINE}*")
     st.markdown("**Developed by:** Quantium Insights LLC")
 
-    # Language selector at the TOP — visible immediately on mobile, no sidebar drawer needed
+    # Language selector at the TOP - visible immediately on mobile, no sidebar drawer needed
     lang_col, _ = st.columns([1, 2])
     with lang_col:
         selected_display = st.selectbox(
@@ -2136,8 +2203,8 @@ def main():
 
         ### Knowledge Base
         Our AI is grounded in authoritative frameworks:
-        - **AfDB SEPA (2022–2025):** Skills for Employability and Productivity in Africa
-        - **UNICEF Education Strategy (2019–2030):** Every Child Learns
+        - **AfDB SEPA (2022-2025):** Skills for Employability and Productivity in Africa
+        - **UNICEF Education Strategy (2019-2030):** Every Child Learns
         - **ILO Global Employment Trends for Youth (2022):** Investing in Transforming Futures
 
         ### Developer

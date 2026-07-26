@@ -9,10 +9,10 @@ font = "sans serif"
 
 [server]
 headless = true
-# Required behind HF Spaces' proxy — without this the file uploader returns 403 (AxiosError)
+# Required behind HF Spaces' proxy - without this the file uploader returns 403 (AxiosError)
 enableCORS = false
 enableXsrfProtection = false
-maxUploadSize = 25                    # MB — plenty for a CV, safer than the 200MB default
+maxUploadSize = 25                    # MB - plenty for a CV, safer than the 200MB default
 
 [browser]
 gatherUsageStats = false
