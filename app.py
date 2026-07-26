@@ -544,6 +544,18 @@ def generate_premium_cv_docx(cv_json_str):
         r = p.add_run(summary)
         set_run(r, size=10.5, color=DARK)
 
+    # ===== SELECTED ACHIEVEMENTS (quantified) =====
+    achievements = cv.get("selected_achievements", [])
+    if achievements:
+        add_section_heading("Selected Achievements")
+        for ach in achievements:
+            p = doc.add_paragraph(style='List Bullet')
+            p.paragraph_format.space_after = Pt(2)
+            p.paragraph_format.left_indent = Cm(0.8)
+            p.clear()
+            r = p.add_run(ach)
+            set_run(r, size=10, color=DARK)
+
     # ===== CORE COMPETENCIES =====
     competencies = cv.get("core_competencies", [])
     if competencies:
@@ -903,7 +915,16 @@ Source: AfDB, ILO, UNICEF frameworks""",
 with st.sidebar:
     st.markdown(f"## {APP_NAME}")
     st.markdown(f"*{TAGLINE}*")
-    
+
+    if st.session_state.get("access_granted"):
+        _who = st.session_state.get("user_name", "")
+        if _who:
+            st.caption(f"Signed in as {_who}")
+        if st.button("Sign out", key="signout_btn"):
+            st.session_state.pop("access_granted", None)
+            st.session_state.pop("user_name", None)
+            st.rerun()
+
     # Admin Access
     st.markdown("---")
     admin_access = st.checkbox("Admin Access")
@@ -1208,6 +1229,7 @@ RESPOND ONLY WITH VALID JSON (no markdown, no code blocks, no preamble). Use thi
   "credentials": "degree abbreviations that appear in the resume (e.g., Ph.D., M.P.H., B.Sc.)",
   "contact_line": "email | phone | city, country | LinkedIn — only the parts present in the resume",
   "professional_summary": "3-4 sentence summary built ONLY from resume facts, tailored for the African market",
+  "selected_achievements": ["4-6 of the strongest, most quantified achievements taken from the resume — keep the numbers, scale, and outcomes exactly as stated"],
   "core_competencies": ["8-12 ATS keyword-rich skills that are supported by the resume"],
   "work_experience": [
     {{
@@ -1289,11 +1311,11 @@ RESPOND ONLY WITH VALID JSON (no markdown, no code blocks, no preamble). Use thi
   "re_line": "{cl_position} Position",
   "salutation": "Dear Hiring Manager,",
   "body_paragraphs": [
-    "Opening paragraph: Express interest, mention the specific role, and give a 1-sentence summary of why you are an ideal fit.",
-    "Paragraph 2: Highlight most relevant experience from resume that directly maps to the target role. Use specific achievements and metrics from the resume.",
-    "Paragraph 3: Highlight additional relevant skills, technical capabilities, or domain expertise. Reference specific projects, tools, or publications if applicable.",
-    "Paragraph 4: Show knowledge of the target company/organization and explain why you are drawn to their mission. Connect your values/goals to theirs.",
-    "Closing paragraph: Reaffirm interest, mention availability, and invite further discussion."
+    "Opening: name the exact role and connect it to the organization's core mission or a specific priority from the ORGANIZATION RESEARCH; add a one-sentence positioning of who you are and why you fit.",
+    "Map your single most relevant experience directly to what this role does, using specific achievements and metrics that appear in the resume.",
+    "Show a second capability the role needs (technical or domain), with concrete evidence and any validation or results from the resume.",
+    "Demonstrate specific knowledge of the organization (from the ORGANIZATION RESEARCH — a real product, programme, or value) and connect your goals to theirs.",
+    "Close: reaffirm interest, note availability, and invite an interview."
   ],
   "closing_line": "Respectfully submitted,",
   "signature_name": "Full Name with credentials",
@@ -1455,6 +1477,7 @@ RESPOND ONLY WITH VALID JSON (no markdown, no code blocks, no preamble). Use thi
   "credentials": "degree abbreviations if clearly stated (e.g., B.Sc.), else empty string",
   "contact_line": "the contact line provided, or empty string",
   "professional_summary": "3-4 sentence summary based ONLY on what the candidate said, tailored to the African market",
+  "selected_achievements": ["2-4 concrete achievements ONLY if the answers contain them (with any numbers given); else empty list"],
   "core_competencies": ["6-10 ATS keyword-rich skills drawn from their answers"],
   "work_experience": [
     {{
@@ -1815,6 +1838,204 @@ def ai_assistant_section():
         else:
             st.warning("Please enter a question above before clicking 'Ask AI Assistant'.")
 
+# ----- SECTION 5: MOTIVATION & SCHOLARSHIP LETTERS -----
+SCHOOLS = {
+    "Africa": [
+        "University of Cape Town", "University of the Witwatersrand", "Stellenbosch University",
+        "University of Pretoria", "University of Ibadan", "University of Lagos",
+        "University of Nigeria, Nsukka", "Ahmadu Bello University", "Covenant University",
+        "University of Nairobi", "Makerere University", "University of Ghana",
+        "Kwame Nkrumah University of Science and Technology", "Addis Ababa University",
+        "Cairo University", "University of Rwanda", "Other (type below)",
+    ],
+    "Europe": [
+        "University of Navarra", "ETH Zurich", "University of Geneva", "Sorbonne University",
+        "KU Leuven", "Karolinska Institute", "University of Amsterdam", "Delft University of Technology",
+        "LMU Munich", "Heidelberg University", "Sciences Po", "Trinity College Dublin",
+        "University of Copenhagen", "Uppsala University", "Other (type below)",
+    ],
+    "United Kingdom": [
+        "University of Oxford", "University of Cambridge", "Imperial College London",
+        "University College London (UCL)", "London School of Economics (LSE)",
+        "University of Edinburgh", "University of Manchester", "King's College London",
+        "University of Warwick", "University of Bristol", "Other (type below)",
+    ],
+    "Canada": [
+        "University of Toronto", "McGill University", "University of British Columbia",
+        "University of Alberta", "McMaster University", "University of Waterloo",
+        "Universite de Montreal", "Queen's University", "University of Ottawa", "Other (type below)",
+    ],
+    "Asia": [
+        "National University of Singapore", "Nanyang Technological University", "University of Tokyo",
+        "Kyoto University", "Tsinghua University", "Peking University", "University of Hong Kong",
+        "KAIST", "Seoul National University", "IIT Bombay", "IIT Delhi", "University of Malaya",
+        "Other (type below)",
+    ],
+    "United States": [
+        "Harvard University", "Massachusetts Institute of Technology (MIT)", "Stanford University",
+        "Johns Hopkins University", "University of California, Berkeley", "Yale University",
+        "Columbia University", "University of Michigan", "University of Washington", "Duke University",
+        "University of Pennsylvania", "Emory University", "Other (type below)",
+    ],
+    "Other": ["Other (type below)"],
+}
+
+
+def motivation_letters_section():
+    log_analytics('section_accessed', 'Motivation Letters')
+
+    st.markdown("## Motivation & Scholarship Letters")
+    st.markdown("Generate a strong, tailored letter for a university application or scholarship — "
+                "grounded in your real background and live research on the school.")
+
+    category = st.radio(
+        "What are you applying for?",
+        ["Undergraduate program", "PhD / Doctorate position", "Scholarship"],
+        horizontal=True,
+    )
+
+    c1, c2 = st.columns(2)
+    with c1:
+        region = st.selectbox("Region", list(SCHOOLS.keys()), key="ml_region")
+    with c2:
+        school_pick = st.selectbox("Institution", SCHOOLS[region], key="ml_school_pick")
+    custom_school = st.text_input("Or type the exact institution name (overrides the list)", key="ml_custom_school")
+    school = custom_school.strip() or ("" if school_pick.startswith("Other") else school_pick)
+
+    programme = st.text_input(
+        "Programme / scholarship name",
+        placeholder="e.g., MSc Public Health, PhD in Epidemiology, Chevening Scholarship",
+        key="ml_programme",
+    )
+
+    with st.expander("Your details (used on the letter)"):
+        ac1, ac2 = st.columns(2)
+        with ac1:
+            ml_name = st.text_input("Full name", key="ml_name")
+            ml_email = st.text_input("Email", key="ml_email")
+        with ac2:
+            ml_phone = st.text_input("Phone", key="ml_phone")
+            ml_city = st.text_input("City, Country", key="ml_city")
+
+    st.markdown("**Tell us about your application** (or upload the programme / scholarship details below):")
+    ml_answers = st.text_area(
+        "Your background & motivation",
+        height=180,
+        placeholder=("- Your current education / degree and grades\n"
+                     "- Relevant experience, projects, or achievements\n"
+                     "- Why this programme/scholarship and this school\n"
+                     "- Your goals and how this fits them"),
+        key="ml_answers",
+    )
+    uploaded = st.file_uploader(
+        "Optional: upload the programme / scholarship info (PDF, DOCX, TXT)",
+        type=['pdf', 'docx', 'txt'], key="ml_upload",
+    )
+
+    if st.button("Generate Letter", key="ml_generate"):
+        if not (school and programme.strip() and (ml_answers.strip() or uploaded)):
+            st.warning("Please provide the institution, the programme, and either your background or an uploaded document.")
+            return
+
+        log_analytics('motivation_letter', f"{category} | {school}")
+        with st.spinner("Researching the school and drafting your letter..."):
+            prog_info = ""
+            if uploaded:
+                try:
+                    if uploaded.name.endswith('.txt'):
+                        prog_info = uploaded.read().decode('utf-8', errors='ignore')
+                    elif uploaded.name.endswith('.pdf'):
+                        import PyPDF2
+                        prog_info = "".join((pg.extract_text() or "") for pg in PyPDF2.PdfReader(uploaded).pages)
+                    elif uploaded.name.endswith('.docx'):
+                        prog_info = "\n".join(par.text for par in Document(uploaded).paragraphs)
+                except Exception:
+                    prog_info = ""
+
+            school_research = web_research(
+                f"{school} {programme} {category} admissions focus, values, and what they look for in applicants"
+            )
+            rag_ctx = retrieve_career_guidance(
+                f"education guidance {category} {programme} Africa scholarship motivation strategic"
+            )
+
+            cat_guidance = {
+                "Undergraduate program": "Emphasize genuine academic passion for the field, curiosity, key achievements and grades, why this programme and school, and clear goals. Motivated, mature tone.",
+                "PhD / Doctorate position": "Emphasize research interests and their fit with the group/department, prior research experience and methods, publications or outputs if any, why this supervisor/programme, and long-term research goals. Scholarly, precise tone.",
+                "Scholarship": "Emphasize both merit and motivation: achievements, leadership, financial or contextual need if relevant, intended impact (especially for Africa's development), and why you embody the scholarship's values.",
+            }[category]
+
+            ml_contact = " | ".join([x for x in [ml_email.strip(), ml_phone.strip(), ml_city.strip()] if x])
+
+            prompt = f"""You are an expert admissions and scholarship writing coach. Write a compelling, honest motivation letter.
+
+APPLICATION TYPE: {category}
+TARGET INSTITUTION: {school}
+PROGRAMME / SCHOLARSHIP: {programme}
+APPLICANT NAME: {ml_name.strip() if ml_name.strip() else "(not provided)"}
+APPLICANT CONTACT: {ml_contact if ml_contact else "(not provided)"}
+
+APPLICANT BACKGROUND (ground truth — use ONLY what appears here):
+{ml_answers[:6000] if ml_answers.strip() else "(rely on the uploaded programme info; do not invent applicant facts)"}
+
+PROGRAMME / SCHOLARSHIP DETAILS (from the uploaded document, if any):
+{prog_info[:4000]}
+
+SCHOOL RESEARCH (verified web results — use to tailor 'why this school'; do NOT invent beyond this):
+{school_research if school_research else "(No live research available — keep school references general and do not fabricate specifics.)"}
+
+CATEGORY GUIDANCE: {cat_guidance}
+
+RESPOND ONLY WITH VALID JSON (no markdown, no code fences). Use this exact structure:
+{{
+  "full_name": "applicant full name or empty string",
+  "credentials": "",
+  "contact_line": "the applicant contact line, or empty string",
+  "date": "{datetime.now().strftime('%B %d, %Y')}",
+  "addressee_lines": ["Admissions / Selection Committee", "{school}"],
+  "re_line": "{category}: {programme}",
+  "salutation": "Dear Members of the Selection Committee,",
+  "body_paragraphs": [
+    "Opening: state exactly what you are applying for and connect it to a specific strength of the programme/school (use SCHOOL RESEARCH); one-sentence positioning of who you are.",
+    "Your most relevant background and achievements mapped to what this programme values — specific, using only facts provided.",
+    "A second dimension appropriate to the category (research fit / academic strength / leadership / impact), with concrete evidence.",
+    "Why THIS institution and programme specifically (use SCHOOL RESEARCH — a real focus, value, or feature) and how it fits your goals.",
+    "Close: restate motivation, note readiness/availability, and thank the committee."
+  ],
+  "closing_line": "Yours sincerely,",
+  "signature_name": "applicant full name",
+  "signature_title": "",
+  "signature_contact": "the applicant contact line, or empty string"
+}}
+
+RULES:
+- Use ONLY facts from the applicant background / uploaded info — do NOT invent grades, awards, experiences, or publications.
+- Make school-specific statements grounded in SCHOOL RESEARCH; if none is available, keep them general.
+- Return ONLY the JSON object, nothing else."""
+
+            letter_json = safe_llm_call(prompt, rag_ctx, "English")
+            if letter_json.startswith("⚠️"):
+                st.warning(letter_json)
+            else:
+                try:
+                    st.session_state['ml_docx'] = generate_premium_cover_letter_docx(letter_json)
+                    st.session_state['ml_generated'] = True
+                    st.success("Motivation letter generated.")
+                except Exception as e:
+                    st.error(f"Letter generation error: {str(e)}")
+                    st.info("Tip: add a few more details and try again.")
+
+    if st.session_state.get('ml_generated'):
+        st.markdown("---")
+        data = st.session_state['ml_docx']
+        data.seek(0)
+        st.download_button(
+            "Download Letter (.docx)", data=data,
+            file_name=f"AfriCareer_Motivation_Letter_{datetime.now().strftime('%Y%m%d')}.docx",
+            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            key="ml_dl",
+        )
+
 # ----- LANDING PAGE / LOGIN -----
 def render_landing():
     """Show the landing page + sign-in. Returns True once the user has entered."""
@@ -1894,6 +2115,7 @@ def main():
         "Learning Resources",
         "AI Assistant",
         "Resume Analysis",
+        "Motivation Letters",
     ])
 
     with tabs[0]:
@@ -1942,6 +2164,9 @@ def main():
 
     with tabs[4]:
         resume_analysis_section()
+
+    with tabs[5]:
+        motivation_letters_section()
 
 if __name__ == "__main__":
     main()
