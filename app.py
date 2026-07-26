@@ -927,11 +927,11 @@ with st.sidebar:
     st.markdown("---")
     st.markdown("## Features")
     st.markdown("""
-    - 🎯 Youth-Centric Design
-    - 📄 ATS-Optimized CV Builder
-    - 🌍 9 African Languages
-    - 💬 AI-Powered Guidance
-    - 📚 Culturally Grounded via RAG
+    - Youth-Centric Design
+    - ATS-Optimized CV Builder
+    - 9 African Languages
+    - AI-Powered Guidance
+    - Culturally Grounded via RAG
     """)
     
     st.markdown("---")
@@ -1546,13 +1546,20 @@ def provider_search_url(provider: str, query: str) -> str:
 
 @st.cache_data(ttl=3600, show_spinner=False)
 def verify_url(url: str, timeout: float = 6.0) -> bool:
-    """Return True if the URL is reachable (HTTP status < 400) with a browser-like request."""
+    """Return True if the URL resolves for a real user.
+
+    2xx/3xx = OK. Anti-bot blocks (401/403/405/429/999) also count as OK: the page
+    exists for real browsers even though it refuses automated requests (Class Central,
+    Udemy, LinkedIn do this). Only clear failures — 404/410/5xx, timeouts, or DNS/
+    connection errors — return False.
+    """
     if not url or not url.startswith(("http://", "https://")):
         return False
     try:
         with httpx.Client(follow_redirects=True, timeout=timeout,
                           headers={"User-Agent": _BROWSER_UA}) as client:
-            return client.get(url).status_code < 400
+            code = client.get(url).status_code
+        return code < 400 or code in (401, 403, 405, 429, 999)
     except Exception:
         return False
 
