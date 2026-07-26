@@ -117,109 +117,106 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# ===== PREMIUM DARK NAVY THEME (base colors set in .streamlit/config.toml) =====
+# ===== LIGHT, MODERN THEME (OpenAI-style; base colors set in .streamlit/config.toml) =====
 st.markdown("""
 <style>
-    /* App backdrop: deep navy with a subtle teal glow at the top */
+    :root {
+        --ink: #15161B;
+        --muted: #5B5F6B;
+        --accent: #4C6FFF;
+        --accent2: #7A5CFF;
+        --line: #E6E8EE;
+        --soft: #F4F6FA;
+    }
+
+    /* Clean white canvas with a soft cool wash at the top */
     .stApp {
         background:
-            radial-gradient(1100px 520px at 50% -8%, rgba(20,184,166,0.10), transparent 60%),
-            linear-gradient(180deg, #0A1A2F 0%, #0C2038 100%);
+            radial-gradient(900px 380px at 82% -6%, rgba(122,92,255,0.08), transparent 60%),
+            radial-gradient(900px 380px at 12% -6%, rgba(76,111,255,0.08), transparent 60%),
+            #FFFFFF;
         overflow-x: hidden;
     }
 
-    /* Focused, professional content column on desktop */
-    .block-container {
-        max-width: 1000px;
-        padding-top: 2.2rem;
-    }
+    .block-container { max-width: 1000px; padding-top: 2.2rem; }
 
-    /* Display headings: refined serif to match the generated CV documents */
-    h1, h2, h3, h4 {
-        font-family: Georgia, 'Times New Roman', serif !important;
-        color: #F1F6FB !important;
-        letter-spacing: 0.2px;
+    /* Clean modern sans-serif everywhere */
+    html, body, [class*="css"], .stMarkdown, p, li, label, input, textarea, button, select {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
     }
-    h1 { font-weight: 700; }
-
-    /* Body text: light on dark for comfortable reading */
-    p, li, label, .stMarkdown { color: #D6E1EE; }
-    a, a:visited { color: #2DE0CE !important; text-decoration: none; }
+    h1, h2, h3, h4 { color: var(--ink) !important; font-weight: 700; letter-spacing: -0.01em; }
+    p, li, label, .stMarkdown { color: #2B2D36; }
+    [data-testid="stCaptionContainer"], .stCaption { color: var(--muted) !important; }
+    a, a:visited { color: var(--accent) !important; text-decoration: none; }
     a:hover { text-decoration: underline; }
-    hr { border-color: rgba(255,255,255,0.08) !important; }
+    hr { border-color: var(--line) !important; }
 
-    /* Primary buttons: teal */
+    /* Primary buttons: friendly blue -> indigo */
     .stButton > button {
-        background: linear-gradient(135deg, #14B8A6 0%, #0E9488 100%);
-        color: #04201C !important;
+        background: linear-gradient(135deg, #4C6FFF 0%, #7A5CFF 100%);
+        color: #FFFFFF !important;
         border: none;
         border-radius: 10px;
-        padding: 12px 26px;
-        font-weight: 700;
-        box-shadow: 0 6px 18px rgba(20,184,166,0.25);
+        padding: 11px 24px;
+        font-weight: 600;
+        box-shadow: 0 6px 16px rgba(76,111,255,0.22);
         transition: all .2s ease;
     }
-    .stButton > button:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 10px 24px rgba(20,184,166,0.35);
-    }
+    .stButton > button:hover { transform: translateY(-1px); box-shadow: 0 10px 22px rgba(76,111,255,0.30); }
 
-    /* Download buttons: warm amber accent to distinguish the "take-away" action */
+    /* Download buttons: fresh green accent for the "take-away" action */
     .stDownloadButton > button {
-        background: linear-gradient(135deg, #F4B740 0%, #E89B2C 100%) !important;
-        color: #2A1A00 !important;
-        border: none;
-        border-radius: 10px;
-        padding: 12px 26px;
-        font-weight: 700;
-        box-shadow: 0 6px 18px rgba(244,183,64,0.25);
+        background: linear-gradient(135deg, #17B26A 0%, #0E9E5C 100%) !important;
+        color: #FFFFFF !important;
+        border: none; border-radius: 10px; padding: 11px 24px; font-weight: 600;
+        box-shadow: 0 6px 16px rgba(23,178,106,0.22);
     }
 
-    /* Tabs: clean underline style */
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 4px;
-        border-bottom: 1px solid rgba(255,255,255,0.08);
-        flex-wrap: wrap;
-    }
-    .stTabs [data-baseweb="tab"] {
-        background: transparent;
-        color: #A9BBCF !important;
-        border-radius: 8px 8px 0 0;
-        padding: 10px 18px;
-        font-weight: 600;
-    }
+    /* Tabs: clean underline */
+    .stTabs [data-baseweb="tab-list"] { gap: 4px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+    .stTabs [data-baseweb="tab"] { background: transparent; color: var(--muted) !important; border-radius: 8px 8px 0 0; padding: 10px 18px; font-weight: 600; }
     .stTabs [data-baseweb="tab"] p { color: inherit !important; font-weight: 600; }
-    .stTabs [aria-selected="true"] {
-        background: rgba(20,184,166,0.12) !important;
-        border-bottom: 2px solid #14B8A6;
-    }
-    .stTabs [aria-selected="true"] p { color: #2DE0CE !important; }
+    .stTabs [aria-selected="true"] { background: rgba(76,111,255,0.08) !important; border-bottom: 2px solid var(--accent); }
+    .stTabs [aria-selected="true"] p { color: var(--accent) !important; }
 
-    /* Inputs, text areas, selects: subtle dark surfaces with a clear border */
+    /* Inputs: white with soft border */
     .stTextInput input,
     .stTextArea textarea,
     .stSelectbox div[data-baseweb="select"] > div {
-        background: #0E2135 !important;
-        border: 1px solid rgba(255,255,255,0.12) !important;
-        border-radius: 8px !important;
-        color: #E8EEF5 !important;
+        background: #FFFFFF !important;
+        border: 1px solid var(--line) !important;
+        border-radius: 10px !important;
+        color: var(--ink) !important;
     }
 
     /* File uploader dropzone */
     [data-testid="stFileUploaderDropzone"] {
-        background: #0E2135 !important;
-        border: 1px dashed rgba(20,184,166,0.45) !important;
-        border-radius: 10px;
+        background: var(--soft) !important;
+        border: 1px dashed rgba(76,111,255,0.45) !important;
+        border-radius: 12px;
     }
 
-    /* Alerts */
-    .stAlert { border-radius: 10px; }
+    .stAlert { border-radius: 12px; }
 
-    /* Sidebar */
-    [data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #08182B 0%, #0B2137 100%);
-        border-right: 1px solid rgba(255,255,255,0.06);
+    /* Sidebar: soft light with a divider */
+    [data-testid="stSidebar"] { background: var(--soft); border-right: 1px solid var(--line); }
+
+    /* Landing hero: warm+cool blended gradient (drop in a licensed photo later via background-image) */
+    .africareer-hero {
+        border-radius: 20px;
+        padding: 3rem 2rem;
+        text-align: center;
+        background:
+            radial-gradient(600px 300px at 15% 20%, rgba(255,159,67,0.55), transparent 60%),
+            radial-gradient(600px 300px at 85% 25%, rgba(122,92,255,0.60), transparent 60%),
+            radial-gradient(700px 360px at 50% 115%, rgba(23,178,106,0.55), transparent 60%),
+            linear-gradient(135deg, #4C6FFF 0%, #7A5CFF 100%);
+        box-shadow: 0 20px 50px rgba(76,111,255,0.25);
     }
+    .africareer-hero h1 { color: #FFFFFF !important; font-size: 2.4rem; margin: 0 0 .5rem 0; }
+    .africareer-hero p { color: rgba(255,255,255,0.94) !important; font-size: 1.08rem; max-width: 640px; margin: 0 auto; }
+    .hero-chips { margin-top: 1.4rem; display: flex; gap: .5rem; flex-wrap: wrap; justify-content: center; }
+    .hero-chip { background: rgba(255,255,255,0.18); color: #fff; padding: .4rem .9rem; border-radius: 999px; font-size: .9rem; font-weight: 600; }
 
     /* Hide Streamlit chrome for a cleaner, app-like surface */
     #MainMenu { visibility: hidden; }
@@ -253,6 +250,8 @@ st.markdown("""
         h1 { font-size: 1.5rem !important; }
         h2 { font-size: 1.25rem !important; }
         h3 { font-size: 1.1rem !important; }
+        .africareer-hero { padding: 2rem 1rem; }
+        .africareer-hero h1 { font-size: 1.7rem; }
 
         /* Tabs: scroll horizontally, keep labels tappable */
         .stTabs [data-baseweb="tab-list"] {
@@ -1126,7 +1125,7 @@ def resume_analysis_section():
                     analysis_prompt = f"""Analyze this resume for the African job market.
 
 Resume Content:
-{resume_text[:3000]}
+{resume_text[:12000]}
 
 Location Context: {city if city else 'General African market'}
 Additional Info: {additional_info if additional_info else 'None'}
@@ -1195,51 +1194,45 @@ Provide:
                             
                             cv_gen_prompt = f"""You are a professional CV writer specializing in ATS-optimized resumes for the African job market.
 
-ORIGINAL RESUME:
-{resume_text[:4000]}
+ORIGINAL RESUME (this is the ground truth — use ONLY what appears here):
+{resume_text[:16000]}
 
-ANALYSIS FEEDBACK TO INCORPORATE:
+ANALYSIS FEEDBACK (apply wording/structure improvements ONLY — do NOT add new facts):
 {feedback[:2000]}
 
-Based on the original resume details and the analysis feedback, create an improved, premium, ATS-optimized CV.
+Rewrite the resume into an improved, premium, ATS-optimized CV.
 
 RESPOND ONLY WITH VALID JSON (no markdown, no code blocks, no preamble). Use this exact structure:
 {{
-  "full_name": "FULL NAME FROM RESUME",
-  "credentials": "Degree abbreviations e.g. Ph.D., M.P.H., B.Sc.",
-  "contact_line": "email | phone | city, country | LinkedIn (from resume)",
-  "professional_summary": "3-4 sentence powerful summary with quantified achievements, tailored for African market. Incorporate feedback improvements.",
-  "core_competencies": ["Competency 1", "Competency 2", "... 8-12 ATS keyword-rich competencies"],
+  "full_name": "full name exactly as in the resume",
+  "credentials": "degree abbreviations that appear in the resume (e.g., Ph.D., M.P.H., B.Sc.)",
+  "contact_line": "email | phone | city, country | LinkedIn — only the parts present in the resume",
+  "professional_summary": "3-4 sentence summary built ONLY from resume facts, tailored for the African market",
+  "core_competencies": ["8-12 ATS keyword-rich skills that are supported by the resume"],
   "work_experience": [
     {{
-      "title": "Job Title",
-      "company": "Company Name",
-      "location": "City, Country",
-      "dates": "Month Year - Month Year",
-      "bullets": ["Achievement bullet with metrics (start with action verb)...", "...3-5 bullets per role"]
+      "title": "Job title from resume",
+      "company": "Company/Organization from resume",
+      "location": "City, Country if in resume, else omit this key",
+      "dates": "dates if in resume, else omit this key",
+      "bullets": ["3-5 achievement bullets rewritten from what the resume actually says"]
     }}
   ],
   "education": [
-    {{
-      "degree": "Degree Name, Field",
-      "institution": "University Name",
-      "dates": "Year"
-    }}
+    {{"degree": "Degree, Field from resume", "institution": "Institution from resume", "dates": "Year if in resume, else omit this key"}}
   ],
-  "publications": ["Citation 1 (if applicable)"],
-  "projects": ["Project description (if applicable)"],
-  "certifications": ["Certification 1 (if applicable)"],
-  "technical_skills": "Comma-separated list of software, tools, platforms",
-  "languages": ["English (Native)", "French (Professional)"]
+  "publications": ["only publications that appear in the resume; else empty list"],
+  "projects": ["only projects that appear in the resume; else empty list"],
+  "certifications": ["only certifications that appear in the resume; else empty list"],
+  "technical_skills": "only tools/software mentioned in the resume, comma-separated",
+  "languages": ["ONLY languages explicitly stated in the resume; return an empty list [] if none are stated"]
 }}
 
-RULES:
-- Keep ALL factual details from original resume — do NOT invent or hallucinate experience
-- Improve bullet points with action verbs and quantified metrics where possible
-- Ensure 95%+ ATS compatibility with clean formatting
-- Target 2 pages of content
-- Incorporate the feedback improvements (better keywords, stronger bullets, etc.)
-- Return ONLY the JSON object, nothing else"""
+CRITICAL RULES (accuracy matters more than polish):
+- Include EVERY employer and role that appears in the resume — do NOT drop any position (all organizations such as HJF, USAID, UNICEF, etc. must appear if they are in the resume).
+- Do NOT invent or add anything absent from the resume: no new employers, dates, metrics, degrees, publications, tools, or languages. If the resume does not list a language, the languages array MUST be empty.
+- You may rephrase and quantify ONLY using numbers already present in the resume.
+- Return ONLY the JSON object, nothing else."""
 
                             cv_json = safe_llm_call(cv_gen_prompt, rag_context_cv, "English")
 
@@ -1268,15 +1261,23 @@ RULES:
                     with st.spinner("Crafting your premium cover letter..."):
                         try:
                             rag_context_cl = retrieve_career_guidance(f"cover letter professional {cl_position} {cl_company} African job market")
-                            
-                            cl_gen_prompt = f"""You are a professional cover letter writer. Generate a premium, compelling cover letter.
 
-CANDIDATE'S RESUME:
-{resume_text[:4000]}
+                            # Deep research on the target organization (requires TAVILY_API_KEY)
+                            org_research = web_research(
+                                f"{cl_company} company mission, values, products, and recent priorities relevant to a {cl_position} role"
+                            )
+
+                            cl_gen_prompt = f"""You are a professional cover letter writer. Generate a premium, compelling, tailored cover letter.
+
+CANDIDATE'S RESUME (ground truth — use only what appears here):
+{resume_text[:16000]}
 
 TARGET POSITION: {cl_position}
 TARGET COMPANY: {cl_company}
 LOCATION CONTEXT: {st.session_state.get('resume_city', 'Africa')}
+
+ORGANIZATION RESEARCH (verified web results about the company; use these specifics to tailor the letter — do NOT invent facts beyond this):
+{org_research if org_research else "(No live research available — rely on widely-known general facts about the company and do not fabricate specifics.)"}
 
 RESPOND ONLY WITH VALID JSON (no markdown, no code blocks, no preamble). Use this exact structure:
 {{
@@ -1301,11 +1302,10 @@ RESPOND ONLY WITH VALID JSON (no markdown, no code blocks, no preamble). Use thi
 }}
 
 RULES:
-- Use ONLY factual details from the resume — do NOT invent achievements or experience
-- Each body paragraph should be 3-5 sentences, substantive and specific
-- Use confident, professional tone
-- Highlight quantified achievements where available in the resume
-- Tailor language to the target company and African/international development context where applicable
+- Use ONLY factual details from the resume for the candidate's experience — do NOT invent achievements, employers, or metrics.
+- Make the company paragraph SPECIFIC using the ORGANIZATION RESEARCH above (reference a real product, mission point, or recent priority). If no research is available, keep company statements general and do not fabricate specifics.
+- Each body paragraph should be 3-5 sentences, substantive and specific.
+- Use a confident, professional tone; highlight quantified achievements only where the resume provides the numbers.
 - Return ONLY the JSON object, nothing else"""
 
                             cl_json = safe_llm_call(cl_gen_prompt, rag_context_cl, "English")
@@ -1580,6 +1580,31 @@ def web_search_links(query: str, max_results: int = 4):
     except Exception:
         return []
 
+@st.cache_data(ttl=1800, show_spinner=False)
+def web_research(query: str, max_results: int = 5) -> str:
+    """Return a short grounded research brief (answer + result snippets) from Tavily, or ''."""
+    if not TAVILY_API_KEY:
+        return ""
+    try:
+        with httpx.Client(timeout=15.0) as client:
+            resp = client.post(
+                "https://api.tavily.com/search",
+                json={"api_key": TAVILY_API_KEY, "query": query,
+                      "max_results": max_results, "search_depth": "advanced",
+                      "include_answer": True},
+            )
+            data = resp.json()
+        parts = []
+        if data.get("answer"):
+            parts.append("Summary: " + data["answer"])
+        for r in data.get("results", []):
+            c = (r.get("content") or "").strip()
+            if c:
+                parts.append(f"- {r.get('title', '')}: {c[:400]}")
+        return "\n".join(parts)[:4000]
+    except Exception:
+        return ""
+
 # ----- SECTION 3: LEARNING RESOURCES -----
 def learning_resources_section():
     log_analytics('section_accessed', 'Learning Resources')
@@ -1732,24 +1757,47 @@ def ai_assistant_section():
         else:
             st.warning("Please enter a question above before clicking 'Ask AI Assistant'.")
 
-# ----- ACCESS GATE -----
-def require_access():
-    """Gate the app behind an optional invite code (set APP_ACCESS_CODE to enable)."""
-    if not APP_ACCESS_CODE:
-        return True
+# ----- LANDING PAGE / LOGIN -----
+def render_landing():
+    """Show the landing page + sign-in. Returns True once the user has entered."""
     if st.session_state.get("access_granted"):
         return True
 
-    st.title(APP_NAME)
-    st.markdown(f"### *{TAGLINE}*")
-    st.info("This is a private pilot. Please enter your access code to continue.")
-    entered = st.text_input("Access code", type="password", key="access_code_input")
-    if st.button("Enter"):
-        if entered.strip() == APP_ACCESS_CODE:
-            st.session_state["access_granted"] = True
-            st.rerun()
-        else:
-            st.error("Invalid access code. Please contact the AfriCareer AI team.")
+    st.markdown(f"""
+    <div class="africareer-hero">
+        <h1>{APP_NAME}</h1>
+        <p>{TAGLINE}. Build an ATS-ready CV, get personalized career guidance, and find
+        verified courses — free, multilingual, and made for African youth.</p>
+        <div class="hero-chips">
+            <span class="hero-chip">ATS-optimized CVs</span>
+            <span class="hero-chip">9 African languages</span>
+            <span class="hero-chip">Verified learning links</span>
+            <span class="hero-chip">24/7 AI guidance</span>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown("")
+    _, mid, _ = st.columns([1, 1.5, 1])
+    with mid:
+        st.markdown("#### Sign in to continue")
+        name = st.text_input("Your name", key="login_name", placeholder="e.g., Amina Bello")
+        code = ""
+        if APP_ACCESS_CODE:
+            code = st.text_input("Access code", type="password", key="login_code",
+                                 placeholder="Enter your pilot access code")
+        if st.button("Enter AfriCareer AI", key="login_btn"):
+            if APP_ACCESS_CODE and code.strip() != APP_ACCESS_CODE:
+                st.error("Invalid access code. Please contact the AfriCareer AI team.")
+            elif not name.strip():
+                st.warning("Please enter your name to continue.")
+            else:
+                st.session_state["access_granted"] = True
+                st.session_state["user_name"] = name.strip()
+                log_analytics("login", name.strip())
+                st.rerun()
+        st.caption("Free to use. Your details are only used to personalize your experience.")
+
     return False
 
 # ----- MAIN APP -----
@@ -1760,7 +1808,7 @@ def main():
         admin_dashboard()
         return
 
-    if not require_access():
+    if not render_landing():
         return
 
     if 'user_logged' not in st.session_state:
