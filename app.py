@@ -115,109 +115,113 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# FIXED CSS - LIGHT BACKGROUND, DARK TEXT (READABLE!)
+# ===== PREMIUM DARK NAVY THEME (base colors set in .streamlit/config.toml) =====
 st.markdown("""
 <style>
-    /* LIGHT BACKGROUNDS - EASY TO READ */
-    .main {
-        background: linear-gradient(135deg, #e8f5e9 0%, #f1f8f4 100%);
-    }
-    
+    /* App backdrop: deep navy with a subtle teal glow at the top */
     .stApp {
-        background: #ffffff;
-    }
-    
-    /* DARK TEXT ON LIGHT - READABLE! */
-    p, div, span, li, label, .stMarkdown {
-        color: #1a1a1a !important;
-    }
-    
-    /* Headers - Dark Green */
-    h1, h2, h3 {
-        color: #1a4d2e !important;
-        font-weight: 700;
-    }
-    
-    /* Sidebar - Dark Green BG, White Text */
-    [data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #1a4d2e 0%, #2d7a3e 100%);
-    }
-    
-    [data-testid="stSidebar"] * {
-        color: white !important;
-    }
-    
-    /* Button styling */
-    .stButton>button {
-        background: linear-gradient(135deg, #2d7a3e 0%, #1a4d2e 100%);
-        color: white !important;
-        border: none;
-        border-radius: 25px;
-        padding: 12px 30px;
-        font-weight: 600;
-        box-shadow: 0 4px 15px rgba(45, 122, 62, 0.4);
-        transition: all 0.3s ease;
-    }
-    
-    .stButton>button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(45, 122, 62, 0.6);
-    }
-    
-    /* Tab styling - YELLOW TEXT FOR CLARITY */
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 8px;
-        background-color: transparent;
-    }
-    
-    .stTabs [data-baseweb="tab"] {
-        background: linear-gradient(135deg, #2d7a3e 0%, #1a4d2e 100%);
-        color: #FFD700 !important;
-        border-radius: 15px 15px 0 0;
-        padding: 12px 24px;
-        font-weight: 600;
-    }
-    
-    /* Target all text inside tabs - FORCE YELLOW */
-    .stTabs [data-baseweb="tab"] p,
-    .stTabs [data-baseweb="tab"] span,
-    .stTabs [data-baseweb="tab"] div {
-        color: #FFD700 !important;
-    }
-    
-    /* Active tab */
-    .stTabs [aria-selected="true"] {
-        background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%) !important;
-        color: #1a4d2e !important;
-    }
-    
-    /* Active tab text - DARK GREEN */
-    .stTabs [aria-selected="true"] p,
-    .stTabs [aria-selected="true"] span,
-    .stTabs [aria-selected="true"] div {
-        color: #1a4d2e !important;
-        font-weight: 700;
-    }
-    
-    /* Info boxes */
-    .stAlert {
-        border-radius: 15px;
-        border-left: 5px solid #2d7a3e;
-        background: white;
-    }
-    
-    /* Download button */
-    .stDownloadButton>button {
-        background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%) !important;
-        color: #1a4d2e !important;
-        border-radius: 25px;
-        padding: 12px 30px;
-        font-weight: 700;
-        box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4);
+        background:
+            radial-gradient(1100px 520px at 50% -8%, rgba(20,184,166,0.10), transparent 60%),
+            linear-gradient(180deg, #0A1A2F 0%, #0C2038 100%);
+        overflow-x: hidden;
     }
 
-    /* Never allow the page itself to scroll sideways on any device */
-    .stApp { overflow-x: hidden; }
+    /* Focused, professional content column on desktop */
+    .block-container {
+        max-width: 1000px;
+        padding-top: 2.2rem;
+    }
+
+    /* Display headings: refined serif to match the generated CV documents */
+    h1, h2, h3, h4 {
+        font-family: Georgia, 'Times New Roman', serif !important;
+        color: #F1F6FB !important;
+        letter-spacing: 0.2px;
+    }
+    h1 { font-weight: 700; }
+
+    /* Body text: light on dark for comfortable reading */
+    p, li, label, .stMarkdown { color: #D6E1EE; }
+    a, a:visited { color: #2DE0CE !important; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    hr { border-color: rgba(255,255,255,0.08) !important; }
+
+    /* Primary buttons: teal */
+    .stButton > button {
+        background: linear-gradient(135deg, #14B8A6 0%, #0E9488 100%);
+        color: #04201C !important;
+        border: none;
+        border-radius: 10px;
+        padding: 12px 26px;
+        font-weight: 700;
+        box-shadow: 0 6px 18px rgba(20,184,166,0.25);
+        transition: all .2s ease;
+    }
+    .stButton > button:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 10px 24px rgba(20,184,166,0.35);
+    }
+
+    /* Download buttons: warm amber accent to distinguish the "take-away" action */
+    .stDownloadButton > button {
+        background: linear-gradient(135deg, #F4B740 0%, #E89B2C 100%) !important;
+        color: #2A1A00 !important;
+        border: none;
+        border-radius: 10px;
+        padding: 12px 26px;
+        font-weight: 700;
+        box-shadow: 0 6px 18px rgba(244,183,64,0.25);
+    }
+
+    /* Tabs: clean underline style */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 4px;
+        border-bottom: 1px solid rgba(255,255,255,0.08);
+        flex-wrap: wrap;
+    }
+    .stTabs [data-baseweb="tab"] {
+        background: transparent;
+        color: #A9BBCF !important;
+        border-radius: 8px 8px 0 0;
+        padding: 10px 18px;
+        font-weight: 600;
+    }
+    .stTabs [data-baseweb="tab"] p { color: inherit !important; font-weight: 600; }
+    .stTabs [aria-selected="true"] {
+        background: rgba(20,184,166,0.12) !important;
+        border-bottom: 2px solid #14B8A6;
+    }
+    .stTabs [aria-selected="true"] p { color: #2DE0CE !important; }
+
+    /* Inputs, text areas, selects: subtle dark surfaces with a clear border */
+    .stTextInput input,
+    .stTextArea textarea,
+    .stSelectbox div[data-baseweb="select"] > div {
+        background: #0E2135 !important;
+        border: 1px solid rgba(255,255,255,0.12) !important;
+        border-radius: 8px !important;
+        color: #E8EEF5 !important;
+    }
+
+    /* File uploader dropzone */
+    [data-testid="stFileUploaderDropzone"] {
+        background: #0E2135 !important;
+        border: 1px dashed rgba(20,184,166,0.45) !important;
+        border-radius: 10px;
+    }
+
+    /* Alerts */
+    .stAlert { border-radius: 10px; }
+
+    /* Sidebar */
+    [data-testid="stSidebar"] {
+        background: linear-gradient(180deg, #08182B 0%, #0B2137 100%);
+        border-right: 1px solid rgba(255,255,255,0.06);
+    }
+
+    /* Hide Streamlit chrome for a cleaner, app-like surface */
+    #MainMenu { visibility: hidden; }
+    footer { visibility: hidden; }
 
     /* ===== MOBILE RESPONSIVENESS (phones, <= 640px) ===== */
     @media (max-width: 640px) {
@@ -272,7 +276,7 @@ try:
     OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
     
     if not PINECONE_API_KEY or not OPENAI_API_KEY:
-        st.error("⚠️ Missing API keys! Check your .env file.")
+        st.error("⚠️ The service is not fully configured yet. Please contact the AfriCareer AI team.")
         st.stop()
     
     pc = Pinecone(api_key=PINECONE_API_KEY)
@@ -922,7 +926,7 @@ with st.sidebar:
     st.markdown("## ✨ Features")
     st.markdown("""
     - 🎯 Youth-Centric Design
-    - 📄 ATS-Optimized CVs (95%+ pass rate)
+    - 📄 ATS-Optimized CV Builder
     - 🌍 9 African Languages
     - 💬 AI-Powered Guidance
     - 📚 Culturally Grounded via RAG
@@ -941,8 +945,7 @@ with st.sidebar:
                 st.info("ℹ️ Knowledge base already initialized")
     
     st.markdown("---")
-    st.markdown("## 🤝 Partnership")
-    st.markdown("**Pilot Partner:** Ahmadu Bello University Zaria, Nigeria")
+    st.caption("© Quantium Insights LLC")
 
 # ----- ADMIN DASHBOARD -----
 def admin_dashboard():
@@ -996,7 +999,7 @@ def admin_dashboard():
         uploaded_doc = st.file_uploader(
             "Upload Document to Knowledge Base",
             type=['pdf', 'txt', 'docx'],
-            help="Limit 200MB per file • TXT, PDF, DOCX"
+            help="Limit 25MB per file • TXT, PDF, DOCX"
         )
         
         doc_source = st.text_input(
@@ -1082,7 +1085,7 @@ def resume_analysis_section():
     uploaded_file = st.file_uploader(
         "📎 Upload Your Resume",
         type=['pdf', 'docx', 'txt'],
-        help="Limit 200MB per file • PDF, DOCX, TXT"
+        help="Limit 25MB per file • PDF, DOCX, TXT"
     )
     
     city = st.text_input(
@@ -1630,7 +1633,7 @@ def main():
     
     st.title(f"🌍 {APP_NAME}")
     st.markdown(f"### *{TAGLINE}*")
-    st.markdown("**Partnership:** Ahmadu Bello University Zaria, Nigeria | **Developed by:** Quantium Insights LLC")
+    st.markdown("**Developed by:** Quantium Insights LLC")
 
     # Language selector at the TOP — visible immediately on mobile, no sidebar drawer needed
     lang_col, _ = st.columns([1, 2])
@@ -1644,63 +1647,59 @@ def main():
     target_lang = LANGUAGES[selected_display]
 
     tabs = st.tabs([
-        "📄 Resume Analysis",
+        "ℹ️ About",
         "🎓 Career Guidance",
         "📚 Learning Resources",
         "💬 AI Assistant",
-        "ℹ️ About"
+        "📄 Resume Analysis",
     ])
-    
+
     with tabs[0]:
-        resume_analysis_section()
-    
-    with tabs[1]:
-        career_guidance_section()
-    
-    with tabs[2]:
-        learning_resources_section()
-    
-    with tabs[3]:
-        ai_assistant_section()
-    
-    with tabs[4]:
         st.markdown("""
         ## About AfriCareer AI
-        
+
         **AfriCareer AI** is an AI-powered career guidance platform for African youth.
-        
+
         ### 🎯 Mission
-        Empower 1 million+ urban African youth with professional career services.
-        
+        Empower urban African youth with professional, accessible career services.
+
         ### ✨ Key Features
         - **9 Languages:** English, French, Swahili, Arabic, Hausa, Pidgin, Portuguese, Spanish, Amharic
-        - **ATS-Optimized CVs:** 95%+ pass rate
-        - **Cultural Grounding:** RAG with UNICEF, ILO, AfDB frameworks
+        - **ATS-Optimized CV Builder:** Clean, recruiter-ready formatting
+        - **Cultural Grounding:** RAG grounded in UNICEF, ILO, and AfDB frameworks
         - **Youth-Centric:** Designed for adolescents and young professionals
-        - **Safety Guardrails:** Content filtering for appropriate career guidance
-        
+        - **Safety Guardrails:** Focused, appropriate career guidance
+
         ### 📚 Knowledge Base
         Our AI is grounded in authoritative frameworks:
-        - **AfDB SEPA (2022-2025):** Skills for Employability and Productivity in Africa
-        - **UNICEF Education Strategy (2019-2030):** Every Child Learns
+        - **AfDB SEPA (2022–2025):** Skills for Employability and Productivity in Africa
+        - **UNICEF Education Strategy (2019–2030):** Every Child Learns
         - **ILO Global Employment Trends for Youth (2022):** Investing in Transforming Futures
-        
-        ### 🤝 Partnership
-        **Pilot Partner:** Ahmadu Bello University Zaria, Nigeria
-        
+
         ### 👨‍💻 Developer
         **Dr. Amobi Andrew Onovo**
-        - HIV Data Scientist, UNICEF
         - PhD Global Health, MPH, PGDip Data Science
-        - Nigerian innovator
-        
+        - Global health & data science specialist, Nigeria
+
         ### 🔒 Safety & Ethics
         AfriCareer AI includes guardrails to ensure:
-        - Mission-aligned responses only (career guidance)
+        - Mission-aligned responses (career guidance)
         - No inappropriate or harmful content
-        - Culturally appropriate advice for African context
+        - Culturally appropriate advice for the African context
         - Evidence-based recommendations from trusted sources
         """)
+
+    with tabs[1]:
+        career_guidance_section()
+
+    with tabs[2]:
+        learning_resources_section()
+
+    with tabs[3]:
+        ai_assistant_section()
+
+    with tabs[4]:
+        resume_analysis_section()
 
 if __name__ == "__main__":
     main()

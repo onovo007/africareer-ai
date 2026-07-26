@@ -4,11 +4,8 @@ FROM python:3.11-slim
 # System deps kept minimal; python-docx / PyPDF2 are pure-Python wheels
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
-    PIP_NO_CACHE_DIR=1 \
-    STREAMLIT_SERVER_HEADLESS=true \
-    STREAMLIT_SERVER_ENABLECORS=false \
-    STREAMLIT_SERVER_ENABLEXSRFPROTECTION=false \
-    STREAMLIT_BROWSER_GATHERUSAGESTATS=false
+    PIP_NO_CACHE_DIR=1
+# Streamlit theme + server settings live in .streamlit/config.toml (copied below)
 
 WORKDIR /app
 
@@ -16,8 +13,9 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --upgrade pip && pip install -r requirements.txt
 
-# App code (see .dockerignore — .env, analytics, and the .zipx are excluded)
+# App code + Streamlit theme/server config (see .dockerignore for exclusions)
 COPY app.py .
+COPY .streamlit ./.streamlit
 
 # Hugging Face Spaces expects the app on port 7860 by default.
 # The container runs as a non-root user (HF requirement / good practice).

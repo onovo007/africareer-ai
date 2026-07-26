@@ -1,0 +1,17 @@
+# Professional dark theme + server settings for behind-proxy hosting (HF Spaces)
+[theme]
+base = "dark"
+primaryColor = "#14B8A6"           # teal accent
+backgroundColor = "#0A1A2F"        # deep navy
+secondaryBackgroundColor = "#12293F"  # panels, widgets, sidebar
+textColor = "#E8EEF5"
+
+[server]
+headless = true
+# Required behind HF Spaces' proxy — without this the file uploader returns 403 (AxiosError)
+enableCORS = false
+enableXsrfProtection = false
+maxUploadSize = 25                 # MB — plenty for a CV/resume, safer than the 200MB default
+
+[browser]
+gatherUsageStats = false
