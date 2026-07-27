@@ -16,7 +16,7 @@ import hashlib
 from collections import Counter
 import pandas as pd
 import httpx
-from urllib.parse import quote_plus
+from urllib.parse import quote_plus, urlparse
 
 # ----- BRANDING -----
 COMPANY_NAME = "Quantium Insights LLC"
@@ -1010,11 +1010,13 @@ with st.sidebar:
     st.markdown("---")
     st.markdown("## Features")
     st.markdown("""
-    - Youth-Centric Design
-    - ATS-Optimized CV Builder
-    - 9 African Languages
-    - AI-Powered Guidance
-    - Culturally Grounded via RAG
+    - CV builder & resume analysis
+    - Cover, motivation & scholarship letters
+    - Live job search (boards + NGOs/UN)
+    - Verified course & opportunity links
+    - 9 African languages
+    - RAG-grounded (UNICEF, ILO, AfDB)
+    - For youth and professionals
     """)
     
     st.markdown("---")
@@ -1739,12 +1741,25 @@ def web_research(query: str, max_results: int = 5) -> str:
     except Exception:
         return ""
 
-# Reputable job boards (global + African + development sector) for focused job search
+# General job boards (global + African)
 _JOB_BOARDS = (
     "linkedin.com", "indeed.com", "glassdoor.com", "ziprecruiter.com",
     "jobberman.com", "myjobmag.com", "brightermonday.co.ke", "careers24.com",
-    "reliefweb.int", "unjobs.org", "impactpool.org", "devex.com",
 )
+# NGOs, UN agencies and international organizations (searched as a separate pass)
+_NGO_IO_BOARDS = (
+    "who.int", "unicef.org", "gavi.org", "unv.org", "un.org", "undp.org",
+    "unhcr.org", "worldbank.org", "fhi360.org", "path.org",
+    "reliefweb.int", "unjobs.org", "impactpool.org", "devex.com", "idealist.org",
+)
+
+def _job_label(r):
+    """Return a clean, readable (title, source-domain) for a job result."""
+    title = " ".join((r.get("title") or "").split()).strip()
+    domain = urlparse(r.get("url", "")).netloc.replace("www.", "")
+    if len(title) < 3:
+        title = f"Job posting on {domain or 'the web'}"
+    return title, domain
 
 @st.cache_data(ttl=900, show_spinner=False)
 def web_job_search(query: str, time_range: str = "", domains=None, max_results: int = 10):
@@ -2211,6 +2226,7 @@ def jobs_search_section():
         work_mode = st.selectbox("Work mode", ["Any", "Remote", "On-site", "Hybrid"], key="job_mode")
     with jc6:
         boards_only = st.checkbox("Focus on major job boards", value=True, key="job_boards")
+        include_ngo = st.checkbox("Include NGOs & UN / international orgs", value=True, key="job_ngo")
 
     if st.button("Search Jobs", key="job_search_btn"):
         if not TAVILY_API_KEY:
@@ -2236,16 +2252,34 @@ def jobs_search_section():
             parts.append(f"{yr} apply")
             query = " ".join(parts)
             time_range = {"Past 24 hours": "day", "Past week": "week", "Past month": "month"}.get(period, "")
-            domains = _JOB_BOARDS if boards_only else None
-            results = web_job_search(query, time_range=time_range, domains=domains, max_results=10)
-            verified = [r for r in results if verify_url(r["url"])]
+
+            results = []
+            if boards_only:
+                # Pass 1: general job boards (LinkedIn, Indeed, Glassdoor, ZipRecruiter, African boards)
+                results += web_job_search(query, time_range=time_range, domains=_JOB_BOARDS, max_results=8)
+                # Pass 2: NGOs / UN / international organizations, so they are always represented
+                if include_ngo:
+                    ngo_query = query + " NGO OR United Nations OR international organization"
+                    results += web_job_search(ngo_query, time_range=time_range, domains=_NGO_IO_BOARDS, max_results=8)
+            else:
+                results += web_job_search(query, time_range=time_range, domains=None, max_results=12)
+
+            # Dedupe by URL, then verify each link
+            seen, uniq = set(), []
+            for r in results:
+                u = r.get("url", "")
+                if u and u not in seen:
+                    seen.add(u)
+                    uniq.append(r)
+            verified = [r for r in uniq if verify_url(r["url"])]
 
         if verified:
             st.markdown(f"### {len(verified)} current openings")
             for r in verified:
-                st.markdown(f"**[{r['title']}]({r['url']})**")
-                if r.get("content"):
-                    st.caption(r["content"])
+                title, domain = _job_label(r)
+                st.markdown(f"**[{title}]({r['url']})**")
+                snippet = " ".join((r.get("content") or "").split())[:160]
+                st.caption(f"Source: {domain}" + (f"  |  {snippet}" if snippet else ""))
                 st.markdown("")
             st.info("Found a role? Use the Resume Analysis tab to tailor your CV and generate a "
                     "researched cover letter for it.")
@@ -2361,10 +2395,14 @@ def main():
 
         ### Key Features
         - **9 Languages:** English, French, Swahili, Arabic, Hausa, Pidgin, Portuguese, Spanish, Amharic
-        - **ATS-Optimized CV Builder:** Clean, recruiter-ready formatting
+        - **ATS-Optimized CV Builder & Resume Analysis:** clean, recruiter-ready output
+        - **Cover, Motivation & Scholarship Letters:** grounded in live research on the employer or school
+        - **Live Job Search:** current roles across job boards and NGOs / international organizations
+        - **Verified Learning Links:** free and paid courses, checked live
+        - **Real-time Opportunity & Scholarship Search:** current openings with requirements
         - **Cultural Grounding:** RAG grounded in UNICEF, ILO, and AfDB frameworks
-        - **Youth-Centric:** Designed for adolescents and young professionals
-        - **Safety Guardrails:** Focused, appropriate career guidance
+        - **For African youth and professionals**
+        - **Safety Guardrails:** focused, appropriate guidance
 
         ### Knowledge Base
         Our AI is grounded in authoritative frameworks:
