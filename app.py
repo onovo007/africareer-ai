@@ -1144,19 +1144,33 @@ def admin_dashboard():
                         doc_text = uploaded_doc.read().decode('utf-8', errors='ignore')
                     elif name.endswith('.pdf'):
                         import PyPDF2
-                        doc_text = "".join((pg.extract_text() or "") for pg in PyPDF2.PdfReader(uploaded_doc).pages)
+                        reader = PyPDF2.PdfReader(uploaded_doc)
+                        parts, total = [], 0
+                        for pi, pg in enumerate(reader.pages):
+                            if pi >= 400 or total > 450_000:   # bound pages + characters
+                                break
+                            t = pg.extract_text() or ""
+                            parts.append(t)
+                            total += len(t)
+                        doc_text = "".join(parts)
                     elif name.endswith('.docx'):
                         doc_text = "\n".join(p.text for p in Document(uploaded_doc).paragraphs)
                     else:
                         doc_text = ""
 
                     chunk_size = 800
-                    chunks = [c for c in (doc_text[i:i + chunk_size] for i in range(0, len(doc_text), chunk_size)) if c.strip()]
+                    MAX_CHUNKS = 500   # bound time + memory so large PDFs cannot freeze/crash the container
+                    all_chunks = [c for c in (doc_text[i:i + chunk_size] for i in range(0, len(doc_text), chunk_size)) if c.strip()]
+                    truncated = len(all_chunks) > MAX_CHUNKS
+                    chunks = all_chunks[:MAX_CHUNKS]
 
                     if not chunks:
                         st.error("No readable text found (the PDF may be scanned images). "
                                  "Try a text-based PDF, a DOCX, or a TXT file.")
                     else:
+                        if truncated:
+                            st.info(f"Large document: indexing the first {MAX_CHUNKS} chunks "
+                                    f"(of {len(all_chunks)}) - enough for grounding and safe for the server.")
                         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
                         base = uploaded_doc.name.rsplit('.', 1)[0]
                         doc_id = f"{doc_source.strip()}_{base}_{timestamp}"
