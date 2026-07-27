@@ -354,10 +354,11 @@ def log_analytics(event_type, details=None):
         "country": st.session_state.get("user_country", ""),
         "language": st.session_state.get("language_selector", ""),
     }
-    # Prefer durable storage (Supabase REST via httpx - no extra dependency)
+    # Prefer durable storage (Supabase REST via httpx - no extra dependency).
+    # Short timeout so a slow/cold Supabase never stalls a page for the user.
     if _supabase_ready():
         try:
-            with httpx.Client(timeout=8.0) as c:
+            with httpx.Client(timeout=3.0) as c:
                 r = c.post(f"{SUPABASE_URL}/rest/v1/analytics",
                            headers={**_supabase_headers(), "Prefer": "return=minimal"},
                            json=record)
@@ -378,14 +379,16 @@ def log_analytics(event_type, details=None):
     except Exception:
         pass
 
+@st.cache_data(ttl=45, show_spinner=False)
 def load_analytics():
-    """Load analytics from Supabase (REST) if configured, else from local JSON."""
+    """Load analytics from Supabase (REST) if configured, else local JSON.
+    Cached (45s) so the admin dashboard doesn't re-query on every rerun."""
     if _supabase_ready():
         try:
-            with httpx.Client(timeout=10.0) as c:
+            with httpx.Client(timeout=6.0) as c:
                 r = c.get(f"{SUPABASE_URL}/rest/v1/analytics",
                           headers=_supabase_headers(),
-                          params={"select": "*", "order": "timestamp.asc", "limit": "10000"})
+                          params={"select": "*", "order": "timestamp.asc", "limit": "2000"})
             if r.status_code < 300:
                 return r.json() or []
         except Exception:
@@ -397,6 +400,14 @@ def load_analytics():
     except Exception:
         pass
     return []
+
+@st.cache_data(ttl=45, show_spinner=False)
+def kb_total_chunks():
+    """Cached Pinecone chunk count so the admin KB tab doesn't call Pinecone every rerun."""
+    try:
+        return index.describe_index_stats().get('total_vector_count', 0)
+    except Exception:
+        return None
 
 # ===== ENHANCED RAG RETRIEVAL WITH GUARDRAILS =====
 def retrieve_career_guidance(query, top_k=5):
@@ -1053,7 +1064,13 @@ def admin_dashboard():
     
     with tabs[0]:
         st.markdown("## Usage Analytics")
-        
+
+        if st.button("Refresh data", key="refresh_analytics"):
+            load_analytics.clear()
+            kb_total_chunks.clear()
+            st.rerun()
+        st.caption("Data is cached for ~45s to keep the dashboard fast. Use Refresh for the latest.")
+
         analytics = load_analytics()
         if analytics:
             df = pd.DataFrame(analytics)
@@ -1092,11 +1109,11 @@ def admin_dashboard():
     with tabs[1]:
         st.markdown("## Knowledge Base Management")
 
-        try:
-            total_vectors = index.describe_index_stats().get('total_vector_count', 0)
+        total_vectors = kb_total_chunks()
+        if total_vectors is not None:
             st.info(f"Current knowledge base: {total_vectors} total chunks. "
                     "(This count can take a few seconds to update after changes.)")
-        except Exception:
+        else:
             st.warning("Unable to fetch knowledge base statistics.")
 
         st.markdown("---")
@@ -1159,6 +1176,7 @@ def admin_dashboard():
                             prog.progress(min(1.0, (start + len(batch)) / len(chunks)),
                                           text=f"Indexed {added}/{len(chunks)} chunks...")
                         prog.empty()
+                        kb_total_chunks.clear()
                         st.success(f"Document added: {added} chunks indexed.")
                         st.info(f"Document ID: {doc_id}")
                         st.caption("Save this Document ID if you may want to delete this document later.")
@@ -1182,6 +1200,7 @@ def admin_dashboard():
                     if ids:
                         for k in range(0, len(ids), 100):
                             index.delete(ids=ids[k:k + 100])
+                        kb_total_chunks.clear()
                         st.success(f"Deleted {len(ids)} chunks for {del_id.strip()}.")
                     else:
                         st.info("No chunks found for that Document ID.")
@@ -1196,6 +1215,7 @@ def admin_dashboard():
                 if confirm:
                     try:
                         index.delete(delete_all=True)
+                        kb_total_chunks.clear()
                         st.success("Knowledge base cleared.")
                     except Exception as e:
                         st.error(f"Reset error: {str(e)}")
