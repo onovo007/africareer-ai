@@ -2429,10 +2429,12 @@ def main():
         - **Safety Guardrails:** focused, appropriate guidance
 
         ### Knowledge Base
-        Our AI is grounded in authoritative frameworks:
+        Our AI is grounded in authoritative frameworks and best-practice guides:
         - **AfDB SEPA (2022-2025):** Skills for Employability and Productivity in Africa
         - **UNICEF Education Strategy (2019-2030):** Every Child Learns
         - **ILO Global Employment Trends for Youth (2022):** Investing in Transforming Futures
+        - **Scholarship & motivation-letter best practices:** guidance for undergraduate, PhD/doctoral, and scholarship applications
+        - **Uploaded source documents** from UNICEF, ILO, AfDB, and UNESCO, added to the knowledge base by our team
 
         ### Developer
         **Dr. Amobi Andrew Onovo**
