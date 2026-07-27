@@ -350,7 +350,7 @@ def log_analytics(event_type, details=None):
         "timestamp": datetime.now().isoformat(),
         "event": event_type,
         "details": details,
-        "user": st.session_state.get("user_name", ""),
+        "user_name": st.session_state.get("user_name", ""),
         "country": st.session_state.get("user_country", ""),
         "language": st.session_state.get("language_selector", ""),
     }
@@ -1053,8 +1053,8 @@ def admin_dashboard():
             # Key metrics row
             m1, m2, m3 = st.columns(3)
             m1.metric("Total Events", len(analytics))
-            if 'user' in df.columns:
-                uu = df['user'].fillna('').astype(str)
+            if 'user_name' in df.columns:
+                uu = df['user_name'].fillna('').astype(str)
                 m2.metric("Unique Users", int(uu[uu.str.strip() != ''].nunique()))
             m3.metric("Total Logins", int((df['event'] == 'login').sum()) if 'event' in df.columns else 0)
 
