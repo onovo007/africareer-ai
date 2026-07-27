@@ -37,6 +37,28 @@ LANGUAGES = {
 }
 target_lang = "English"  # module-level default; overwritten by the picker in main()
 
+# Countries for sign-in (self-reported -> clean geographic analytics, privacy-friendly)
+COUNTRIES = [
+    "Select your country",
+    # Africa
+    "Algeria", "Angola", "Benin", "Botswana", "Burkina Faso", "Burundi", "Cabo Verde",
+    "Cameroon", "Central African Republic", "Chad", "Comoros", "Congo (Brazzaville)",
+    "Congo (DRC)", "Cote d'Ivoire", "Djibouti", "Egypt", "Equatorial Guinea", "Eritrea",
+    "Eswatini", "Ethiopia", "Gabon", "Gambia", "Ghana", "Guinea", "Guinea-Bissau", "Kenya",
+    "Lesotho", "Liberia", "Libya", "Madagascar", "Malawi", "Mali", "Mauritania", "Mauritius",
+    "Morocco", "Mozambique", "Namibia", "Niger", "Nigeria", "Rwanda", "Sao Tome and Principe",
+    "Senegal", "Seychelles", "Sierra Leone", "Somalia", "South Africa", "South Sudan", "Sudan",
+    "Tanzania", "Togo", "Tunisia", "Uganda", "Zambia", "Zimbabwe",
+    # Rest of world (common)
+    "United States", "United Kingdom", "Canada", "Australia", "New Zealand", "Ireland",
+    "Germany", "France", "Spain", "Portugal", "Italy", "Netherlands", "Belgium", "Switzerland",
+    "Sweden", "Norway", "Denmark", "Finland", "Austria", "Poland", "Greece", "Turkey",
+    "China", "India", "Japan", "South Korea", "Singapore", "Malaysia", "Indonesia",
+    "Philippines", "Pakistan", "Bangladesh", "United Arab Emirates", "Saudi Arabia", "Qatar",
+    "Brazil", "Mexico", "Argentina", "Russia",
+    "Other",
+]
+
 # Admin credentials (override via env/secret in production; defaults kept for local dev)
 ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "admin")
 ADMIN_PASSWORD_HASH = hashlib.sha256(
@@ -328,6 +350,9 @@ def log_analytics(event_type, details=None):
         "timestamp": datetime.now().isoformat(),
         "event": event_type,
         "details": details,
+        "user": st.session_state.get("user_name", ""),
+        "country": st.session_state.get("user_country", ""),
+        "language": st.session_state.get("language_selector", ""),
     }
     # Prefer durable storage when available
     client = _get_supabase()
@@ -959,8 +984,8 @@ with st.sidebar:
         if _who:
             st.caption(f"Signed in as {_who}")
         if st.button("Sign out", key="signout_btn"):
-            st.session_state.pop("access_granted", None)
-            st.session_state.pop("user_name", None)
+            for _k in ("access_granted", "user_name", "user_country", "user_email"):
+                st.session_state.pop(_k, None)
             st.rerun()
 
     # Admin Access
@@ -1025,11 +1050,31 @@ def admin_dashboard():
         if analytics:
             df = pd.DataFrame(analytics)
 
-            st.metric("Total Events", len(analytics))
+            # Key metrics row
+            m1, m2, m3 = st.columns(3)
+            m1.metric("Total Events", len(analytics))
+            if 'user' in df.columns:
+                uu = df['user'].fillna('').astype(str)
+                m2.metric("Unique Users", int(uu[uu.str.strip() != ''].nunique()))
+            m3.metric("Total Logins", int((df['event'] == 'login').sum()) if 'event' in df.columns else 0)
 
             event_counts = Counter(df['event'])
             st.markdown("### Event Distribution")
             st.bar_chart(event_counts)
+
+            if 'country' in df.columns:
+                cc = df['country'].fillna('').astype(str)
+                cc = cc[(cc.str.strip() != '') & (cc.str.lower() != 'nan')]
+                if not cc.empty:
+                    st.markdown("### Users by Country (geographic coverage)")
+                    st.bar_chart(cc.value_counts())
+
+            if 'language' in df.columns:
+                lg = df['language'].fillna('').astype(str)
+                lg = lg[(lg.str.strip() != '') & (lg.str.lower() != 'nan')]
+                if not lg.empty:
+                    st.markdown("### Language Used")
+                    st.bar_chart(lg.value_counts())
 
             st.markdown("### Recent Events")
             st.dataframe(df.tail(20))
@@ -2234,22 +2279,34 @@ def render_landing():
     _, mid, _ = st.columns([1, 1.5, 1])
     with mid:
         st.markdown("#### Sign in to continue")
-        name = st.text_input("Your name", key="login_name", placeholder="e.g., Amina Bello")
+        name = st.text_input("Full name", key="login_name", placeholder="e.g., Amina Bello")
+        country = st.selectbox("Country", COUNTRIES, key="login_country")
+        email = st.text_input("Email (optional)", key="login_email", placeholder="you@email.com")
         code = ""
         if APP_ACCESS_CODE:
             code = st.text_input("Access code", type="password", key="login_code",
                                  placeholder="Enter your pilot access code")
+        consent = st.checkbox(
+            "I agree that my name and country may be stored to help improve this free service.",
+            key="login_consent")
         if st.button("Enter AfriCareer AI", key="login_btn"):
             if APP_ACCESS_CODE and code.strip() != APP_ACCESS_CODE:
                 st.error("Invalid access code. Please contact the AfriCareer AI team.")
             elif not name.strip():
                 st.warning("Please enter your name to continue.")
+            elif country == COUNTRIES[0]:
+                st.warning("Please select your country.")
+            elif not consent:
+                st.warning("Please tick the consent box to continue.")
             else:
                 st.session_state["access_granted"] = True
                 st.session_state["user_name"] = name.strip()
-                log_analytics("login", name.strip())
+                st.session_state["user_country"] = country
+                st.session_state["user_email"] = email.strip()
+                log_analytics("login", email.strip())
                 st.rerun()
-        st.caption("Free to use. Your details are only used to personalize your experience.")
+        st.caption("Free to use. We store your name and country (and email if given) only to "
+                   "improve the service. We never sell your data or share it externally.")
 
     return False
 
