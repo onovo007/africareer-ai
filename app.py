@@ -1073,40 +1073,41 @@ def admin_dashboard():
             st.rerun()
         st.caption("Data is cached for ~45s to keep the dashboard fast. Use Refresh for the latest.")
 
+        # NOTE: rendered with pure metrics + markdown (NO st.bar_chart / st.dataframe).
+        # Those route through pyarrow, which segfaults the container on HF (exit 139).
         analytics = load_analytics()
-        if analytics:
-            df = pd.DataFrame(analytics)
+        if not analytics:
+            st.info("No analytics data yet")
+        else:
+            events = [str(a.get("event", "")) for a in analytics]
+            users = [str(a.get("user_name", "")).strip() for a in analytics]
+            countries = [str(a.get("country", "")).strip() for a in analytics]
+            langs = [str(a.get("language", "")).strip() for a in analytics]
 
-            # Key metrics row
             m1, m2, m3 = st.columns(3)
             m1.metric("Total Events", len(analytics))
-            if 'user_name' in df.columns:
-                uu = df['user_name'].fillna('').astype(str)
-                m2.metric("Unique Users", int(uu[uu.str.strip() != ''].nunique()))
-            m3.metric("Total Logins", int((df['event'] == 'login').sum()) if 'event' in df.columns else 0)
+            m2.metric("Unique Users", len({u for u in users if u and u.lower() != "nan"}))
+            m3.metric("Total Logins", sum(1 for e in events if e == "login"))
 
-            event_counts = Counter(df['event'])
-            st.markdown("### Event Distribution")
-            st.bar_chart(event_counts)
+            def _counts_table(title, items, top=25):
+                clean = [i for i in items if i and i.lower() != "nan"]
+                if not clean:
+                    return
+                st.markdown(f"### {title}")
+                rows = "\n".join(f"| {k} | {v} |" for k, v in Counter(clean).most_common(top))
+                st.markdown(f"| Item | Count |\n|---|---|\n{rows}")
 
-            if 'country' in df.columns:
-                cc = df['country'].fillna('').astype(str)
-                cc = cc[(cc.str.strip() != '') & (cc.str.lower() != 'nan')]
-                if not cc.empty:
-                    st.markdown("### Users by Country (geographic coverage)")
-                    st.bar_chart(cc.value_counts())
-
-            if 'language' in df.columns:
-                lg = df['language'].fillna('').astype(str)
-                lg = lg[(lg.str.strip() != '') & (lg.str.lower() != 'nan')]
-                if not lg.empty:
-                    st.markdown("### Language Used")
-                    st.bar_chart(lg.value_counts())
+            _counts_table("Event Distribution", events)
+            _counts_table("Users by Country (geographic coverage)", countries)
+            _counts_table("Language Used", langs)
 
             st.markdown("### Recent Events")
-            st.dataframe(df.tail(20))
-        else:
-            st.info("No analytics data yet")
+            recent = list(reversed(analytics[-15:]))
+            body = "\n".join(
+                f"| {str(a.get('timestamp',''))[:19]} | {a.get('event','')} | "
+                f"{a.get('user_name','')} | {a.get('country','')} |"
+                for a in recent)
+            st.markdown("| Time | Event | User | Country |\n|---|---|---|---|\n" + body)
     
     with tabs[1]:
         st.markdown("## Knowledge Base Management")
