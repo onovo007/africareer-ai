@@ -2318,14 +2318,16 @@ def render_landing():
     st.markdown(f"""
     <div class="africareer-hero">
         <h1>{APP_NAME}</h1>
-        <p>{TAGLINE}. Build an ATS-ready CV, generate researched cover and motivation letters,
-        get career guidance, and find verified courses. Free, multilingual, and built for
+        <p>{TAGLINE}. Build an ATS-ready CV, generate researched cover, motivation and
+        scholarship letters, search live jobs across boards and NGOs, get career guidance,
+        and find verified courses and opportunities. Free, multilingual, and built for
         African youth and professionals.</p>
         <div class="hero-chips">
             <span class="hero-chip">ATS-optimized CVs</span>
-            <span class="hero-chip">Cover &amp; motivation letters</span>
+            <span class="hero-chip">Cover, motivation &amp; scholarship letters</span>
+            <span class="hero-chip">Live job search</span>
+            <span class="hero-chip">Verified courses &amp; opportunities</span>
             <span class="hero-chip">9 African languages</span>
-            <span class="hero-chip">Verified learning links</span>
             <span class="hero-chip">24/7 AI guidance</span>
         </div>
     </div>
