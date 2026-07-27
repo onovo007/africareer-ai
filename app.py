@@ -17,6 +17,8 @@ from collections import Counter
 import pandas as pd
 import httpx
 from urllib.parse import quote_plus, urlparse
+import faulthandler
+faulthandler.enable()  # on a native crash (exit 139), print the faulting Python frame to the logs
 
 # ----- BRANDING -----
 COMPANY_NAME = "Quantium Insights LLC"
@@ -1668,6 +1670,14 @@ TAVILY_API_KEY = os.getenv("TAVILY_API_KEY", "").strip()
 _BROWSER_UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
                "(KHTML, like Gecko) Chrome/124.0 Safari/537.36")
 
+@st.cache_resource
+def _shared_http():
+    """One pooled, thread-safe HTTP client reused for link checks - far fewer TLS
+    handshakes than a new client per call, which lowers native memory pressure."""
+    return httpx.Client(follow_redirects=True, timeout=6.0,
+                        headers={"User-Agent": _BROWSER_UA},
+                        limits=httpx.Limits(max_connections=8, max_keepalive_connections=4))
+
 # Reputable providers -> search deep-link templates. A search query cannot 404 to a fake course.
 _PROVIDER_SEARCH = {
     "coursera": "https://www.coursera.org/search?query={q}",
@@ -1734,9 +1744,7 @@ def verify_url(url: str, timeout: float = 6.0) -> bool:
     if not url or not url.startswith(("http://", "https://")):
         return False
     try:
-        with httpx.Client(follow_redirects=True, timeout=timeout,
-                          headers={"User-Agent": _BROWSER_UA}) as client:
-            code = client.get(url).status_code
+        code = _shared_http().get(url).status_code
         return code < 400 or code in (401, 403, 405, 429, 999)
     except Exception:
         return False
