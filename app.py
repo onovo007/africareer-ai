@@ -334,16 +334,16 @@ ANALYTICS_FILE = "africareer_analytics.json"
 SUPABASE_URL = os.getenv("SUPABASE_URL", "").strip()
 SUPABASE_KEY = os.getenv("SUPABASE_KEY", "").strip()
 
-@st.cache_resource
-def _get_supabase():
-    """Return a Supabase client if configured and the package is installed, else None."""
-    if not (SUPABASE_URL and SUPABASE_KEY):
-        return None
-    try:
-        from supabase import create_client
-        return create_client(SUPABASE_URL, SUPABASE_KEY)
-    except Exception:
-        return None
+def _supabase_ready():
+    return bool(SUPABASE_URL and SUPABASE_KEY)
+
+def _supabase_headers():
+    # Works with the new sb_secret_* key or the legacy service_role key
+    return {
+        "apikey": SUPABASE_KEY,
+        "Authorization": f"Bearer {SUPABASE_KEY}",
+        "Content-Type": "application/json",
+    }
 
 def log_analytics(event_type, details=None):
     record = {
@@ -354,12 +354,15 @@ def log_analytics(event_type, details=None):
         "country": st.session_state.get("user_country", ""),
         "language": st.session_state.get("language_selector", ""),
     }
-    # Prefer durable storage when available
-    client = _get_supabase()
-    if client is not None:
+    # Prefer durable storage (Supabase REST via httpx - no extra dependency)
+    if _supabase_ready():
         try:
-            client.table("analytics").insert(record).execute()
-            return
+            with httpx.Client(timeout=8.0) as c:
+                r = c.post(f"{SUPABASE_URL}/rest/v1/analytics",
+                           headers={**_supabase_headers(), "Prefer": "return=minimal"},
+                           json=record)
+            if r.status_code < 300:
+                return
         except Exception:
             pass  # fall through to local file
     # Local JSON fallback (ephemeral on cloud hosts)
@@ -376,12 +379,15 @@ def log_analytics(event_type, details=None):
         pass
 
 def load_analytics():
-    """Load analytics from Supabase if configured, else from local JSON."""
-    client = _get_supabase()
-    if client is not None:
+    """Load analytics from Supabase (REST) if configured, else from local JSON."""
+    if _supabase_ready():
         try:
-            resp = client.table("analytics").select("*").order("timestamp").execute()
-            return resp.data or []
+            with httpx.Client(timeout=10.0) as c:
+                r = c.get(f"{SUPABASE_URL}/rest/v1/analytics",
+                          headers=_supabase_headers(),
+                          params={"select": "*", "order": "timestamp.asc", "limit": "10000"})
+            if r.status_code < 300:
+                return r.json() or []
         except Exception:
             pass
     try:
