@@ -1085,100 +1085,116 @@ def admin_dashboard():
     
     with tabs[1]:
         st.markdown("## Knowledge Base Management")
-        
-        # Display current stats
+
         try:
-            stats = index.describe_index_stats()
-            total_vectors = stats.get('total_vector_count', 0)
-            st.info(f"Current knowledge base: {total_vectors} total chunks from all documents")
-            
-            # Estimate number of documents (assuming ~100-200 chunks per doc)
-            est_docs = max(1, total_vectors // 150)
-            st.info(f"Estimated ~{est_docs} documents loaded")
-        except:
-            st.warning("Unable to fetch knowledge base statistics")
-        
+            total_vectors = index.describe_index_stats().get('total_vector_count', 0)
+            st.info(f"Current knowledge base: {total_vectors} total chunks. "
+                    "(This count can take a few seconds to update after changes.)")
+        except Exception:
+            st.warning("Unable to fetch knowledge base statistics.")
+
         st.markdown("---")
         st.markdown("### Upload New Document")
-        st.info("ℹ️ Each upload ADDS to your existing knowledge base (does not replace)")
-        
+        st.info("Each upload ADDS to the knowledge base (it does not replace existing content).")
+
         uploaded_doc = st.file_uploader(
-            "Upload Document to Knowledge Base",
+            "Upload document to knowledge base",
             type=['pdf', 'txt', 'docx'],
-            help="Limit 25MB per file • TXT, PDF, DOCX"
+            help="Limit 25MB per file • PDF, TXT, DOCX",
+            key="kb_upload",
         )
-        
-        doc_source = st.text_input(
-            "Document Source (e.g., UNICEF, ILO)",
-            placeholder="AfDB",
-            help="Organization or source of the document"
-        )
-        
-        doc_category = st.text_input(
-            "Topic/Category",
-            placeholder="Youth Employment Strategy",
-            help="Main topic or category"
-        )
-        
-        if st.button("Add to Knowledge Base"):
-            if uploaded_doc and doc_source:
-                with st.spinner("Processing document..."):
-                    try:
-                        # Read document based on type
-                        if uploaded_doc.name.endswith('.txt'):
-                            doc_text = uploaded_doc.read().decode('utf-8')
-                        elif uploaded_doc.name.endswith('.pdf'):
-                            import PyPDF2
-                            pdf_reader = PyPDF2.PdfReader(uploaded_doc)
-                            doc_text = ""
-                            for page in pdf_reader.pages:
-                                doc_text += page.extract_text()
-                        elif uploaded_doc.name.endswith('.docx'):
-                            from docx import Document
-                            doc = Document(uploaded_doc)
-                            doc_text = "\n".join([para.text for para in doc.paragraphs])
-                        
-                        # Split into chunks
-                        chunk_size = 500
-                        chunks = [doc_text[i:i+chunk_size] for i in range(0, len(doc_text), chunk_size)]
-                        
-                        # Create unique document ID with timestamp
-                        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-                        doc_id = f"{doc_source}_{uploaded_doc.name.replace('.pdf', '').replace('.docx', '').replace('.txt', '')}_{timestamp}"
-                        
-                        # Upsert to Pinecone
-                        vectors_to_upsert = []
-                        for idx, chunk in enumerate(chunks):
-                            if chunk.strip():
-                                vec = embeddings.embed_query(chunk)
-                                vectors_to_upsert.append({
-                                    "id": f"{doc_id}_chunk_{idx}",
-                                    "values": vec,
-                                    "metadata": {
-                                        "text": chunk,
-                                        "source": doc_source,
-                                        "category": doc_category,
-                                        "document_id": doc_id
-                                    }
-                                })
-                        
-                        if vectors_to_upsert:
-                            index.upsert(vectors=vectors_to_upsert)
-                            
-                            # Get updated stats
-                            new_stats = index.describe_index_stats()
-                            new_total = new_stats.get('total_vector_count', 0)
-                            
-                            st.success(f"Document added - {len(chunks)} chunks indexed.")
-                            st.success(f"New total: {new_total} chunks in knowledge base (+{len(chunks)} from this upload).")
-                            st.info(f"Document ID: {doc_id}")
-                        else:
-                            st.error("No valid content to index")
-                    
-                    except Exception as e:
-                        st.error(f"Error: {str(e)}")
+        c_src, c_cat = st.columns(2)
+        with c_src:
+            doc_source = st.text_input("Document source (e.g., UNICEF, ILO)", placeholder="AfDB", key="kb_source")
+        with c_cat:
+            doc_category = st.text_input("Topic / category", placeholder="Youth Employment Strategy", key="kb_category")
+
+        if st.button("Add to Knowledge Base", key="kb_add"):
+            if not (uploaded_doc and doc_source.strip()):
+                st.warning("Please choose a file and enter a source.")
             else:
-                st.warning("Please upload a document and specify source")
+                try:
+                    name = uploaded_doc.name.lower()
+                    if name.endswith('.txt'):
+                        doc_text = uploaded_doc.read().decode('utf-8', errors='ignore')
+                    elif name.endswith('.pdf'):
+                        import PyPDF2
+                        doc_text = "".join((pg.extract_text() or "") for pg in PyPDF2.PdfReader(uploaded_doc).pages)
+                    elif name.endswith('.docx'):
+                        doc_text = "\n".join(p.text for p in Document(uploaded_doc).paragraphs)
+                    else:
+                        doc_text = ""
+
+                    chunk_size = 800
+                    chunks = [c for c in (doc_text[i:i + chunk_size] for i in range(0, len(doc_text), chunk_size)) if c.strip()]
+
+                    if not chunks:
+                        st.error("No readable text found (the PDF may be scanned images). "
+                                 "Try a text-based PDF, a DOCX, or a TXT file.")
+                    else:
+                        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                        base = uploaded_doc.name.rsplit('.', 1)[0]
+                        doc_id = f"{doc_source.strip()}_{base}_{timestamp}"
+
+                        prog = st.progress(0.0, text="Embedding and indexing...")
+                        added = 0
+                        BATCH = 100
+                        for start in range(0, len(chunks), BATCH):
+                            batch = chunks[start:start + BATCH]
+                            vecs = embeddings.embed_documents(batch)   # one API call per batch
+                            payload = [{
+                                "id": f"{doc_id}_chunk_{start + j}",
+                                "values": vecs[j],
+                                "metadata": {"text": batch[j], "source": doc_source.strip(),
+                                             "category": doc_category.strip(), "document_id": doc_id},
+                            } for j in range(len(batch))]
+                            index.upsert(vectors=payload)               # small, safe batches
+                            added += len(payload)
+                            prog.progress(min(1.0, (start + len(batch)) / len(chunks)),
+                                          text=f"Indexed {added}/{len(chunks)} chunks...")
+                        prog.empty()
+                        st.success(f"Document added: {added} chunks indexed.")
+                        st.info(f"Document ID: {doc_id}")
+                        st.caption("Save this Document ID if you may want to delete this document later.")
+                except Exception as e:
+                    st.error(f"Upload error: {str(e)}")
+
+        st.markdown("---")
+        st.markdown("### Manage / Delete Documents")
+        del_id = st.text_input("Delete by Document ID (paste the ID shown after an upload)", key="kb_del_id")
+        if st.button("Delete this document", key="kb_del_btn"):
+            if not del_id.strip():
+                st.warning("Enter a Document ID.")
+            else:
+                try:
+                    ids = []
+                    for page in index.list(prefix=del_id.strip()):
+                        if isinstance(page, str):
+                            ids.append(page)
+                        else:
+                            ids.extend(page)
+                    if ids:
+                        for k in range(0, len(ids), 100):
+                            index.delete(ids=ids[k:k + 100])
+                        st.success(f"Deleted {len(ids)} chunks for {del_id.strip()}.")
+                    else:
+                        st.info("No chunks found for that Document ID.")
+                except Exception as e:
+                    st.error(f"Delete error: {str(e)}")
+
+        with st.expander("Danger zone: reset the entire knowledge base"):
+            st.caption("Deletes ALL chunks (built-in notes and uploaded documents). Afterward, click "
+                       "'Initialize / Update Knowledge Base' in the sidebar to reload the built-in notes, then re-upload your files.")
+            confirm = st.checkbox("Yes, delete everything in the knowledge base", key="kb_reset_confirm")
+            if st.button("Reset knowledge base", key="kb_reset_btn"):
+                if confirm:
+                    try:
+                        index.delete(delete_all=True)
+                        st.success("Knowledge base cleared.")
+                    except Exception as e:
+                        st.error(f"Reset error: {str(e)}")
+                else:
+                    st.warning("Tick the confirmation box first.")
 
 # ----- SECTION 1: RESUME ANALYSIS -----
 def resume_analysis_section():
